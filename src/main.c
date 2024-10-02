@@ -12,6 +12,7 @@ Este arquivo será posteriormente substituído.
 
 extern int yylex(void);
 extern int yylex_destroy(void);
+extern int yylineno;
 
 extern FILE *yyin;
 extern char *yytext;

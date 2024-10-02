@@ -1,0 +1,21 @@
+int main(){
+
+	// TESTE
+	int _variavel = 20;
+	int var_iavel = 30;
+	float _var2 = 2.0;
+	float _var3 = .3;
+	
+	if (_variavel == 20)
+		return 1;
+	else
+		return 2;
+		
+	while(_var3 >= 0.1){
+		_variavel = _variavel + var_iavel;
+	}
+	
+	return 0;
+		
+}
+

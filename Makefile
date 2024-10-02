@@ -1,7 +1,7 @@
-SOURCES = src/main.c src/aux.c
+SOURCES = src/main.c 
 LEX_SOURCE = flex/scanner.l
 LEX = lex.yy.c
-EXEC = e1
+EXEC = etapa1
 
 all: $(EXEC)
 
