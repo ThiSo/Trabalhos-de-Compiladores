@@ -1,0 +1,5 @@
+bison -d parser.y
+gcc -c main.c parser.tab.c lex.yy.c
+gcc -o etapa2 main.o parser.tab.o lex.yy.o
+./etapa2 -> usar ctrl+D para parar o programa
+echo $?
