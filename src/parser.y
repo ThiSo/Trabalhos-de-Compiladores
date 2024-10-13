@@ -28,15 +28,23 @@
 /*  Um programa na linguagem é composto por uma
     lista de funções, sendo esta lista opcional. */
 
-programa: lista_de_funcoes | ;                                              // ok
-lista_de_funcoes: lista_de_funcoes funcao | funcao;                         // ok
-funcao: cabecalho corpo;                                                    // ok
-cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_retorno;          // ok
-lista_parametros: lista_parametros TK_OC_OR parametro | parametro | ;       // ok
-parametro: TK_IDENTIFICADOR '<' '-' (TK_PR_INT | TK_PR_FLOAT)               // ok
-tipo_retorno: TK_PR_INT | TK_PR_FLOAT;                                      // ok
+programa: lista_de_funcoes | ;                                                                      // ok
+lista_de_funcoes: lista_de_funcoes funcao | funcao;                                                 // ok
+funcao: cabecalho corpo;                                                                            // ok
+cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_retorno;                                  // ok
+lista_parametros: lista_parametros TK_OC_OR parametro | parametro | ;                               // ok
+parametro: TK_IDENTIFICADOR '<' '-' tipo_retorno                                                    // ok
+tipo_retorno: TK_PR_INT | TK_PR_FLOAT;                                                              // ok
+corpo: bloco_comandos;                                                                              // ok
 
-corpo: '{' '}';
+bloco_comandos: '{' comando ';' '}' | '{' '}';
+
+comando: declaracao_variavel | atribuicao | fluxo_controle | bloco_comandos | chamada_func;         // ok
+
+declaracao_variavel: tipo_retorno lista_variaveis;                                                  // ok
+                     lista_variaveis: lista_variaveis ',' variavel | variavel;
+                     variavel: TK_IDENTIFICADOR | TK_IDENTIFICADOR TK_OC_LE literal;
+                     literal: TK_LIT_INT | TK_LIT_FLOAT;
 
 %%
 
