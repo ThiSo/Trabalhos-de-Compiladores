@@ -1,0 +1,40 @@
+funcao = parametro <- float > float {
+	int nome1,nome2 <= 1;
+	float nome3 <= 2.0;
+	int nome4;
+	nome4 = ( 5 + nome1 ) - !2;
+	if (nome1 == 1) {
+		int nome5 <= 3;
+	}
+    int nome5 <= 1;
+}
+
+funcao = parametro <- float > float 
+									{
+										{
+											{
+												int nome1,nome2 <= 1; 
+												float nome3 <= 2.0;
+											}
+										}
+									}
+
+cabeca = > int 
+			{ 
+				if(5 + (nome1 % 2))
+					{
+						int nome<=2;
+					} 
+				else 
+					{
+						int nome3;
+					}
+			}
+
+aloha = > float 
+			{
+				while(5 + (nome1 % 2))
+					{
+						return 5 + (nome1 % 2);
+					}
+			}
