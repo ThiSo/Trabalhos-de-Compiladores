@@ -127,7 +127,7 @@ main3 = > int{
 
 main4 = > int{
 	int valor <= 3;
-	valor = soma_dois(subtrai_dois(55-10));
+	valor = soma_dois(subtrai_dois(55-10) + 5) - (!3);
 }
 
 main5 = > int{
