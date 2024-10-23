@@ -42,12 +42,12 @@ bloco_comandos: '{' lista_comandos '}' | '{' '}';
 
 lista_comandos: comando | comando lista_comandos;
 
-comando: bloco_comandos |                                                                           
+comando: bloco_comandos ';' |                                                                           
          declaracao_variavel ';' | 
          retorno ';' | 
          atribuicao ';' | 
          chamada_funcao ';' |
-         controle_fluxo;
+         controle_fluxo ';';
 
 declaracao_variavel: tipo_variavel lista_variaveis ;                                                
                      lista_variaveis: lista_variaveis ',' variavel | variavel;                      
