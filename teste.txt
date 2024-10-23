@@ -50,3 +50,89 @@ aloha = > float
 						return 5 + (nome1 % 2);
 					};
 			}
+
+minha_funcao = > int {
+    { var1 = 42; };
+
+    if(ola==3)
+    {
+    
+    };
+    int oi<=32,teste<=21,fala<=32.2;
+    var2 = 43*2/2;
+    i=3;
+    return  i | ks/3*a & j==2;
+}
+
+main0 = > int{
+}
+
+main1 = > int{
+	int um;
+	{ 
+		um = 1;	
+	};
+	int dois <= 2;
+	float tres <= 0; 
+	tres = ((um + 2) / 3);
+}
+
+main2 = > int{
+	int um <= 1;
+	if(um){
+		return 10+25;
+	}else{
+		return 0;
+	};
+}
+
+main2 = > int{
+	int um <= 1;
+	if(um){
+		
+	};
+}
+
+main2 = > int{
+	int um <= 1;
+	if(um){
+		{int um <= 1;
+	if(um){
+		return 10+25;
+	}else{
+		return 0;
+	};};
+	};
+}
+
+main2 = > int{
+	int um <= 1;
+	if(um){
+		{};
+	};
+}
+
+soma_dois = value <- int > int{
+	return value + 2;
+}
+
+subtrai_dois = value <- int > int{
+	return value - 2;
+}
+
+main3 = > int{
+	int valor <= 3;
+	valor = soma_dois(subtrai_dois(valor));
+}
+
+main4 = > int{
+	int valor <= 3;
+	valor = soma_dois(subtrai_dois(55-10));
+}
+
+main5 = > int{
+	int valor <= 10;
+	while(valor > 0){
+		valor = valor - 1;
+	};
+}
