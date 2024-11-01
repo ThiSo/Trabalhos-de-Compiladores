@@ -1,26 +1,35 @@
 #ifndef DATA_STRUCTURES_H
 #define DATA_STRUCTURES_H
 
-// Estrutura para um nó da árvore n-ária
-typedef struct Node {
-    void *data;
-    struct Node **children;
-    int numChildren;
-} Node;
+typedef struct asd_tree {
+  char *label;
+  int number_of_children;
+  struct asd_tree **children;
+} asd_tree_t;
 
-// Função para criar um novo nó
-Node* createNode(void *data, int numChildren);
+/*
+ * Função asd_new, cria um nó sem filhos com o label informado.
+ */
+asd_tree_t *asd_new(const char *label);
 
-// Função para adicionar um filho a um nó
-void addChild(Node *parent, Node *child, int index);
+/*
+ * Função asd_tree, libera recursivamente o nó e seus filhos.
+ */
+void asd_free(asd_tree_t *tree);
 
-// Função para liberar a memória da árvore
-void freeTree(Node *root);
+/*
+ * Função asd_add_child, adiciona child como filho de tree.
+ */
+void asd_add_child(asd_tree_t *tree, asd_tree_t *child);
 
-// Função para imprimir a árvore
-void printTree(Node *root, void (*printData)(void *));
+/*
+ * Função asd_print, imprime recursivamente a árvore.
+ */
+void asd_print(asd_tree_t *tree);
 
-// Função de exemplo para imprimir dados inteiros
-void printInt(void *data);
+/*
+ * Função asd_print_graphviz, idem, em formato DOT
+ */
+void asd_print_graphviz (asd_tree_t *tree);
 
 #endif // DATA_STRUCTURES_H

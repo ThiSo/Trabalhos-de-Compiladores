@@ -12,24 +12,21 @@ void *arvore = NULL; // Inicializa o ponteiro como NULL
 int main (int argc, char **argv)
 {
   int ret = yyparse();
-  yylex_destroy();
+  yylex_destroy();   
 
-  int data1 = 1, data2 = 2, data3 = 3, data4 = 4;
-  Node *root = createNode(&data1, 2);
-  arvore = root; // Atribui a raiz ao ponteiro arvore
-
-  Node *child1 = createNode(&data2, 2);
-  Node *child2 = createNode(&data3, 0);
-  Node *child3 = createNode(&data4, 0);
-
-  addChild(root, child1, 0);
-  addChild(root, child2, 1);
-  addChild(child1, child3, 0);
-
-  printTree((Node *)arvore, printInt); // Converte arvore para Node* antes de passar para printTree
-  printf("\n");
-
-  freeTree((Node *)arvore); // Converte arvore para Node* antes de passar para freeTree
-    
+  asd_tree_t *asd_mult = NULL, *asd_soma = NULL;
+  asd_mult = asd_new("*");
+  asd_add_child(asd_mult, asd_new("3"));
+  asd_add_child(asd_mult, asd_new("4"));
+  asd_add_child(asd_mult, asd_new("5"));
+  
+  asd_soma = asd_new("+");
+  asd_add_child(asd_soma, asd_new("5"));
+  asd_add_child(asd_soma, asd_mult);
+  
+  asd_print(asd_soma);
+  asd_print_graphviz(asd_soma);
+  asd_free(asd_soma);
+   
   return ret;
 }

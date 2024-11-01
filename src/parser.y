@@ -88,11 +88,10 @@ prec2: prec2 '*' prec1;
 prec2: prec2 '/' prec1;
 prec2: prec2 '%' prec1;
 prec2: prec1;
-prec1: '-' fator;
-prec1: '!' fator;
-prec1: fator;
+prec1: unario fator | fator;
 fator: '(' expressao ')';
 fator: TK_IDENTIFICADOR | TK_LIT_INT | TK_LIT_FLOAT | chamada_funcao;
+unario: unario '!' | unario '-' | '!' | '-';
 
 %%
 
