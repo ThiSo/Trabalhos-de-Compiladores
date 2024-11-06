@@ -4,6 +4,18 @@
 #include "../include/data_structures.h"
 #define ARQUIVO_SAIDA "saida.dot"
 
+valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor) {
+	valor_lexico_t *valor_lexico = (valor_lexico_t *)malloc(sizeof(valor_lexico_t));
+	if (valor_lexico == NULL) {
+		fprintf(stderr, "Erro ao alocar memória para valor_lexico\n");
+		exit(1);
+	}
+	valor_lexico->linha = linha;
+	valor_lexico->tipo_token = strdup(tipo_token);
+	valor_lexico->valor = strdup(valor);
+	return valor_lexico;
+}
+
 asd_tree_t *asd_new(const char *label)
 {
   asd_tree_t *ret = NULL;

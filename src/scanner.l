@@ -2,7 +2,10 @@
 %{
 
 	#include "parser.tab.h"
+	#include "../include/aux.h"
 	extern int yylineno;
+	extern void *arvore;
+	extern int get_line_number();
 
 %}
 
@@ -26,10 +29,14 @@ return      { return TK_PR_RETURN; }
 
 [!*/%+\-<>{}()=,;]	{ return yytext[0]; }
 
-[0-9]+				{ return TK_LIT_INT; }
-[0-9]*[.][0-9]+		{ return TK_LIT_FLOAT; }
+[0-9]+				{ yylval.valor_lexico = cria_valor_lexico(get_line_number(), "LITERAL", yytext);
+                      return TK_LIT_INT; }
 
-[a-z_][a-z_0-9]*	{ return TK_IDENTIFICADOR; }
+[0-9]*[.][0-9]+		{ yylval.valor_lexico = cria_valor_lexico(get_line_number(), "LITERAL", yytext);
+                      return TK_LIT_FLOAT; }
+
+[a-z_][a-z_0-9]*	{ yylval.valor_lexico = cria_valor_lexico(get_line_number(), "IDENTIFICADOR", yytext);
+					  return TK_IDENTIFICADOR; }
 
 [ \t\n]	    		{ }
 "//".*				{ }

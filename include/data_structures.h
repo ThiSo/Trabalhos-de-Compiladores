@@ -7,6 +7,14 @@ typedef struct asd_tree {
   struct asd_tree **children;
 } asd_tree_t;
 
+typedef struct valor_lexico {
+    int linha;
+    char* tipo_token;
+    char* valor;
+} valor_lexico_t;
+
+valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor);
+
 /*
  * Função asd_new, cria um nó sem filhos com o label informado.
  */
