@@ -118,61 +118,62 @@ literal: TK_LIT_INT
 
 retorno: TK_PR_RETURN expressao;                                                                    
                                                      
-controle_fluxo: ifs           {$$ = $1;}
-              | whiles        {$$ = $1;};                                                                
+controle_fluxo: ifs                     { $$ = $1; }
+              | whiles                  { $$ = $1; };                                                                
 
-ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           { $$ = asd_new("if"); asd_add_child($$,$3); asd_add_child($$,$5);}
-   | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { $$ = asd_new("if"); asd_add_child($$,$3); asd_add_child($$,$5); asd_add_child($$,$7);};                        
+ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           { $$ = asd_new("if"); asd_add_child($$,$3); asd_add_child($$,$5); }
+   | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { $$ = asd_new("if"); asd_add_child($$,$3); asd_add_child($$,$5); asd_add_child($$,$7); };                        
 
-whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos                     { $$ = asd_new("while"); asd_add_child($$,$3); asd_add_child($$,$5);};                                            
+whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos                     { $$ = asd_new("while"); asd_add_child($$,$3); asd_add_child($$,$5); };                                            
 
-atribuicao: TK_IDENTIFICADOR '=' expressao;                                                         
+atribuicao: TK_IDENTIFICADOR '=' expressao                               { $$ = asd_new("="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };                                     
 
-chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')';
+chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')';             // { $$ = asd_new(NOME DA FUNC); asd_add_child($$, $3); };          
 
-lista_argumentos: lista_argumentos ',' expressao 
-                | expressao;
+lista_argumentos: expressao                                              { $$ = $1; }
+                | expressao ',' lista_argumentos                         { $$ = $1; asd_add_child($$, $3); };
 
 
-expressao: expressao TK_OC_OR prec6;
-expressao: prec6;
 
-prec6: prec6 TK_OC_AND prec5;
-prec6: prec5;
+expressao: expressao TK_OC_OR prec6     { $$ = asd_new("|"); asd_add_child($$, $1); asd_add_child($$, $3); }; 
+expressao: prec6                        { $$ = $1; };
 
-prec5: prec5 TK_OC_EQ prec4;
-prec5: prec5 TK_OC_NE prec4;
-prec5: prec4;
+prec6: prec6 TK_OC_AND prec5            { $$ = asd_new("&"); asd_add_child($$, $1); asd_add_child($$, $3); }; 
+prec6: prec5                            { $$ = $1; };
 
-prec4: prec4 '<' prec3;
-prec4: prec4 '>' prec3;
-prec4: prec4 TK_OC_LE prec3;
-prec4: prec4 TK_OC_GE prec3;
-prec4: prec3;
+prec5: prec5 TK_OC_EQ prec4             { $$ = asd_new("=="); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec5: prec5 TK_OC_NE prec4             { $$ = asd_new("!="); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec5: prec4                            { $$ = $1; };
 
-prec3: prec3 '+' prec2;
-prec3: prec3 '-' prec2;
-prec3: prec2;
+prec4: prec4 '<' prec3                  { $$ = asd_new("<"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec4: prec4 '>' prec3                  { $$ = asd_new(">"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec4: prec4 TK_OC_LE prec3             { $$ = asd_new("<="); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec4: prec4 TK_OC_GE prec3             { $$ = asd_new(">="); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec4: prec3                            { $$ = $1; };
 
-prec2: prec2 '*' prec1;
-prec2: prec2 '/' prec1;
-prec2: prec2 '%' prec1;
-prec2: prec1;
+prec3: prec3 '+' prec2                  { $$ = asd_new("+"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec3: prec3 '-' prec2                  { $$ = asd_new("-"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec3: prec2                            { $$ = $1; };  
 
-prec1: unario fator { $$ = asd_new("!"); asd_add_child($$, $2);}
-     | fator;
+prec2: prec2 '*' prec1                  { $$ = asd_new("*"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec2: prec2 '/' prec1                  { $$ = asd_new("/"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec2: prec2 '%' prec1                  { $$ = asd_new("%"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec2: prec1                            { $$ = $1; };
 
-fator: '(' expressao ')' { $$ = $2;};
+prec1: unario fator                     { }                                               // Não tenho certeza desses dois 
+     | fator                            { };                                              //
 
-fator: TK_IDENTIFICADOR     
-     | TK_LIT_INT           
-     | TK_LIT_FLOAT         
-     | chamada_funcao;
+fator: '(' expressao ')'                { $$ = $2;};
 
-unario: unario '!' 
-      | unario '-' 
-      | '!' 
-      | '-';
+fator: TK_IDENTIFICADOR                 { $$ = asd_new($1->valor); }
+     | TK_LIT_INT                       { $$ = asd_new($1->valor); }
+     | TK_LIT_FLOAT                     { $$ = asd_new($1->valor); }
+     | chamada_funcao                   { $$ = $1; };
+
+unario: unario '!'                      { $$ = asd_new("!"); asd_add_child($$, $1); }
+      | unario '-'                      { $$ = asd_new("-"); asd_add_child($$, $1); }
+      | '!'                             // { $$ = $1; }                                        Não tenho certeza desses dois 
+      | '-';                            // { $$ = $1; };                                       
 
 %%
 
