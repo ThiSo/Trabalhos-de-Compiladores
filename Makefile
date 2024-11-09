@@ -25,6 +25,6 @@ src/lex.yy.c: src/scanner.l
 	flex -o src/lex.yy.c src/scanner.l
 
 clean:
-	rm -f obj/*.o src/parser.tab.c src/parser.tab.h src/lex.yy.c etapa2
+	rm -f obj/*.o src/parser.tab.c src/parser.tab.h src/lex.yy.c etapa2 saida.dot graph.png
 
 .PHONY: all clean
