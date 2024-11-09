@@ -71,32 +71,32 @@
 
 %%
 
-programa: lista_de_funcoes 			                                { printf("Árvore final gerada!\n"); asd_print_graphviz($1); asd_free($1); $$ = $1; arvore = $$;}
-        |                                                           { printf("teste"); $$ = NULL; arvore = $$; };                                           
+programa: lista_de_funcoes 			                                { $$ = $1; arvore = $$; }
+    |                                                               { $$ = NULL; arvore = $$; };                                           
 
-lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; asd_add_child($$, $2); } // Rec. a direita para listas
-                | funcao			                                { $$ = $1; };         
+lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); }          // Rec. a direita para listas
+        | funcao			                                        { $$ = $1; };         
 
-funcao: cabecalho corpo				                                { $$ = $2; };	    // Ignora o cabecalho da função e coloca na arvore somente o corpo
+funcao: cabecalho corpo				                                { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
 
-cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_variavel 	{ $$ = NULL; };		// NULL porque não está sendo utilizado no momento, colocar outro valor se for utilizar
+cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };		
 
-lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = $1; asd_add_child($$, $3); }
-                | parametro 			                            { $$ = $1; }
-                |                                                   { $$ = NULL; };            
+lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = NULL; }
+        | parametro 			                                    { $$ = NULL; }
+        |                                                           { $$ = NULL; };            
 
-parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel   { $$ = $4; asd_add_child($$, asd_new($1->valor)); };  
+parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; };  
 
-tipo_variavel: TK_PR_INT		                    { $$ = asd_new($1->valor); } 
-             | TK_PR_FLOAT 		                    { $$ = asd_new($1->valor); };   
+tipo_variavel: TK_PR_INT		                    { $$ = NULL; } 
+             | TK_PR_FLOAT 		                    { $$ = NULL; };   
 
 corpo: bloco_comandos                               { $$ = $1; };                                                   
 
 bloco_comandos: '{' lista_comandos '}'              { $$ = $2; }
               | '{' '}'                             { $$ = NULL; };
 
-lista_comandos: comando 		                    { $$ = $1; }
-              | comando lista_comandos	            { $$ = $1; if($$ != NULL) asd_add_child($$, $2); };
+lista_comandos: comando 		                    { $$ = $1; }                    // Tratamento para as variaveis não inicializadas
+              | comando lista_comandos	            { $$ = $1; if(($$ != NULL) && ($2 != NULL)) asd_add_child($$, $2); else if ($2 != NULL ) $$ = $2; }; 
 
 comando: bloco_comandos ';' 		                { $$ = $1; }
        | declaracao_variavel ';' 	                { $$ = $1; }
@@ -105,12 +105,12 @@ comando: bloco_comandos ';' 		                { $$ = $1; }
        | chamada_funcao ';' 		                { $$ = $1; }
        | controle_fluxo ';'		                    { $$ = $1; };
 
-declaracao_variavel: tipo_variavel lista_variaveis	{ $$ = $1; asd_add_child($$, $2); };   
+declaracao_variavel: tipo_variavel lista_variaveis	{ $$ = $2; };   
 
-lista_variaveis: variavel ',' lista_variaveis 		{ $$ = $1; if($3 != NULL) asd_add_child($$, $3); };
+lista_variaveis: variavel ',' lista_variaveis 		{ $$ = $3; };       // variaveis não inicializadas não entram na AST (mesmo comando)
                | variavel				            { $$ = $1; };     
 
-variavel: TK_IDENTIFICADOR 				            { $$ = asd_new($1->valor); }
+variavel: TK_IDENTIFICADOR 				            { $$ = NULL; }      // variaveis não inicializadas não entram na AST (comandos separados)
         | TK_IDENTIFICADOR TK_OC_LE literal		    { $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };
 
 literal: TK_LIT_INT   					            { $$ = asd_new($1->valor); }  
@@ -122,13 +122,13 @@ controle_fluxo: ifs                     		    { $$ = $1; }
               | whiles                  		    { $$ = $1; };                                                                
 
 ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           { $$ = asd_new("if"); asd_add_child($$,$3); if($5 != NULL){ asd_add_child($$, $5); }}
-   | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { $$ = asd_new("if"); asd_add_child($$,$3); asd_add_child($$,$5); if($5 != NULL){ asd_add_child($$, $7); }};                        
+   | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { $$ = asd_new("if"); asd_add_child($$,$3); if($5 != NULL){ asd_add_child($$, $5); } if($7 != NULL){ asd_add_child($$, $7); }};                        
 
 whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos                     { $$ = asd_new("while"); asd_add_child($$,$3);if($5 != NULL){ asd_add_child($$, $5); } };                                            
 
 atribuicao: TK_IDENTIFICADOR '=' expressao                               { $$ = asd_new("="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };                                     
 
-chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'                { $$ = asd_new(strcat("call ", $1->valor)); asd_add_child($$, $3); };          
+chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'                { char buffer[256]; snprintf(buffer, sizeof(buffer), "call %s", $1->valor); $$ = asd_new(buffer); asd_add_child($$, $3); };          
 
 lista_argumentos: expressao                                              { $$ = $1; }
                 | expressao ',' lista_argumentos                         { $$ = $1; asd_add_child($$, $3); };
