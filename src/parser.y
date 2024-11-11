@@ -71,18 +71,18 @@
 
 %%
 
-programa: lista_de_funcoes 			                                { $$ = $1; arvore = $$; }
-    |                                                               { $$ = NULL; arvore = $$; };                                           
+programa: lista_de_funcoes 			                    	{ $$ = $1; arvore = $$; }
+    |                                                               	{ $$ = NULL; arvore = $$; };                                           
 
 lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); }          // Rec. a direita para listas
-        | funcao			                                        { $$ = $1; };         
+        | funcao			                                { $$ = $1; };         
 
-funcao: cabecalho corpo				                                { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
+funcao: cabecalho corpo				                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
 
 cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };		
 
 lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = NULL; }
-        | parametro 			                                    { $$ = NULL; }
+        | parametro 			                            { $$ = NULL; }
         |                                                           { $$ = NULL; };            
 
 parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; };  
@@ -95,28 +95,28 @@ corpo: bloco_comandos                               { $$ = $1; };
 bloco_comandos: '{' lista_comandos '}'              { $$ = $2; }
               | '{' '}'                             { $$ = NULL; };
 
-lista_comandos: comando 		                    { $$ = $1; }                    // Tratamento para as variaveis não inicializadas
+lista_comandos: comando 		            { $$ = $1; }                    // Tratamento para as variaveis não inicializadas
               | comando lista_comandos	            { $$ = $1; if(($$ != NULL) && ($2 != NULL)) asd_add_child($$, $2); else if ($2 != NULL ) $$ = $2; }; 
 
 comando: bloco_comandos ';' 		                { $$ = $1; }
        | declaracao_variavel ';' 	                { $$ = $1; }
-       | retorno ';' 			                    { $$ = $1; }
-       | atribuicao ';' 		                    { $$ = $1; }
+       | retorno ';' 			                { $$ = $1; }
+       | atribuicao ';' 		                { $$ = $1; }
        | chamada_funcao ';' 		                { $$ = $1; }
-       | controle_fluxo ';'		                    { $$ = $1; };
+       | controle_fluxo ';'		                { $$ = $1; };
 
 declaracao_variavel: tipo_variavel lista_variaveis	{ $$ = $2; };   
 
-lista_variaveis: variavel ',' lista_variaveis 		{ $$ = $3; };       // variaveis não inicializadas não entram na AST (mesmo comando)
-               | variavel				            { $$ = $1; };     
+lista_variaveis: variavel ',' lista_variaveis 		{ if($1 == NULL) $$ = $3; else { $$ = $1; if ($3 != NULL) asd_add_child($$, $3); }};       // variaveis não inicializadas não entram na AST (mesmo comando)
+               | variavel				{ $$ = $1; };     
 
-variavel: TK_IDENTIFICADOR 				            { $$ = NULL; }      // variaveis não inicializadas não entram na AST (comandos separados)
+variavel: TK_IDENTIFICADOR 				    { $$ = NULL; }      // variaveis não inicializadas não entram na AST (comandos separados)
         | TK_IDENTIFICADOR TK_OC_LE literal		    { $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };
 
-literal: TK_LIT_INT   					            { $$ = asd_new($1->valor); }  
-       | TK_LIT_FLOAT 					            { $$ = asd_new($1->valor); };                                         
+literal: TK_LIT_INT   					    { $$ = asd_new($1->valor); }  
+       | TK_LIT_FLOAT 					    { $$ = asd_new($1->valor); };                                         
 
-retorno: TK_PR_RETURN expressao				        { $$ = asd_new("return"), asd_add_child($$, $2); };                                                                    
+retorno: TK_PR_RETURN expressao				    { $$ = asd_new("return"), asd_add_child($$, $2); };                                                                    
                                                      
 controle_fluxo: ifs                     		    { $$ = $1; }
               | whiles                  		    { $$ = $1; };                                                                
