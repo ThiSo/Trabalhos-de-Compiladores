@@ -64,25 +64,25 @@
 %type<arvore> prec3
 %type<arvore> prec2
 %type<arvore> prec1
-%type<arvore> fator
-%type<arvore> unario
 
 %define parse.error verbose
 
 %%
 
-programa: lista_de_funcoes 			                    	{ $$ = $1; arvore = $$; }
-    |                                                               	{ $$ = NULL; arvore = $$; };                                           
+programa: lista_de_funcoes 			                    	        { $$ = $1; arvore = $$; }
+    |                                                               { $$ = NULL; arvore = $$; };                                           
 
-lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); }          // Rec. a direita para listas
-        | funcao			                                { $$ = $1; };         
+// Rec. a direita para listas pela dica do professor
+lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); }          
+        | funcao			                                        { $$ = $1; };         
 
-funcao: cabecalho corpo				                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
+funcao: cabecalho corpo				                                { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
 
 cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };		
 
+// Rec. a direita para listas pela dica do professor
 lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = NULL; }
-        | parametro 			                            { $$ = NULL; }
+        | parametro 			                                    { $$ = NULL; }
         |                                                           { $$ = NULL; };            
 
 parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; };  
@@ -95,31 +95,34 @@ corpo: bloco_comandos                               { $$ = $1; };
 bloco_comandos: '{' lista_comandos '}'              { $$ = $2; }
               | '{' '}'                             { $$ = NULL; };
 
-lista_comandos: comando 		            { $$ = $1; }                    // Tratamento para as variaveis não inicializadas
+// Rec. a direita para listas pela dica do professor
+lista_comandos: comando 		                    { $$ = $1; }  // Tratamento para as variaveis não inicializadas
               | comando lista_comandos	            { $$ = $1; if(($$ != NULL) && ($2 != NULL)) asd_add_child($$, $2); else if ($2 != NULL ) $$ = $2; }; 
 
-comando: bloco_comandos ';' 		                { $$ = $1; }
-       | declaracao_variavel ';' 	                { $$ = $1; }
-       | retorno ';' 			                { $$ = $1; }
-       | atribuicao ';' 		                { $$ = $1; }
-       | chamada_funcao ';' 		                { $$ = $1; }
-       | controle_fluxo ';'		                { $$ = $1; };
+comando: bloco_comandos ';' 		                                     { $$ = $1; }
+       | declaracao_variavel ';' 	                                     { $$ = $1; }
+       | retorno ';' 			                                         { $$ = $1; }
+       | atribuicao ';' 		                                         { $$ = $1; }
+       | chamada_funcao ';' 		                                     { $$ = $1; }
+       | controle_fluxo ';'		                                         { $$ = $1; };
 
-declaracao_variavel: tipo_variavel lista_variaveis	{ $$ = $2; };   
+declaracao_variavel: tipo_variavel lista_variaveis	                     { $$ = $2; };   
 
-lista_variaveis: variavel ',' lista_variaveis 		{ if($1 == NULL) $$ = $3; else { $$ = $1; if ($3 != NULL) asd_add_child($$, $3); }};       // variaveis não inicializadas não entram na AST (mesmo comando)
-               | variavel				{ $$ = $1; };     
+                                                                         // variaveis não inicializadas não entram na AST (mesmo comando)
+lista_variaveis: variavel ',' lista_variaveis 		                     { if($1 == NULL) $$ = $3; else { $$ = $1; if ($3 != NULL) asd_add_child($$, $3); }};       
+               | variavel				                                 { $$ = $1; };     
 
-variavel: TK_IDENTIFICADOR 				    { $$ = NULL; }      // variaveis não inicializadas não entram na AST (comandos separados)
-        | TK_IDENTIFICADOR TK_OC_LE literal		    { $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };
+                                                                         // variaveis não inicializadas não entram na AST (comandos separados)
+variavel: TK_IDENTIFICADOR 				                                 { $$ = NULL; } 
+        | TK_IDENTIFICADOR TK_OC_LE literal		                         { $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };
 
-literal: TK_LIT_INT   					    { $$ = asd_new($1->valor); }  
-       | TK_LIT_FLOAT 					    { $$ = asd_new($1->valor); };                                         
+literal: TK_LIT_INT   					                                 { $$ = asd_new($1->valor); }  
+       | TK_LIT_FLOAT 					                                 { $$ = asd_new($1->valor); };                                         
 
-retorno: TK_PR_RETURN expressao				    { $$ = asd_new("return"), asd_add_child($$, $2); };                                                                    
+retorno: TK_PR_RETURN expressao				                             { $$ = asd_new("return"), asd_add_child($$, $2); };                                                                    
                                                      
-controle_fluxo: ifs                     		    { $$ = $1; }
-              | whiles                  		    { $$ = $1; };                                                                
+controle_fluxo: ifs                     		                         { $$ = $1; }
+              | whiles                  		                         { $$ = $1; };                                                                
 
 ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           { $$ = asd_new("if"); asd_add_child($$,$3); if($5 != NULL){ asd_add_child($$, $5); }}
    | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { $$ = asd_new("if"); asd_add_child($$,$3); if($5 != NULL){ asd_add_child($$, $5); } if($7 != NULL){ asd_add_child($$, $7); }};                        
@@ -132,7 +135,6 @@ chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'                { char 
 
 lista_argumentos: expressao                                              { $$ = $1; }
                 | expressao ',' lista_argumentos                         { $$ = $1; asd_add_child($$, $3); };
-
 
 
 expressao: expressao TK_OC_OR prec6     { $$ = asd_new("|"); asd_add_child($$, $1); asd_add_child($$, $3); }; 
@@ -160,25 +162,17 @@ prec2: prec2 '/' prec1                  { $$ = asd_new("/"); asd_add_child($$, $
 prec2: prec2 '%' prec1                  { $$ = asd_new("%"); asd_add_child($$, $1); asd_add_child($$, $3); };
 prec2: prec1                            { $$ = $1; };
 
-prec1: unario fator			            { if($1 != NULL) { 
-						                        $$ = $1; 
-						                        asd_add_child($$, $2);
-					                        }
-					                        else {
-					  	                        $$ = $2;
-					                        } };
+// Recursão a esquerda aqui gera erros de redução
+prec1:'!' prec1                         { $$ = asd_new("!"); if($2 != NULL) { asd_add_child($$, $2);} }
+    | '-' prec1                         { $$ = asd_new("-"); if($2 != NULL) { asd_add_child($$, $2);} };
 
-fator: '(' expressao ')'                { $$ = $2;};
+prec1: '(' expressao ')'                { $$ = $2;};
 
-fator: TK_IDENTIFICADOR                 { $$ = asd_new($1->valor); }
-     | TK_LIT_INT                       { $$ = asd_new($1->valor); }
-     | TK_LIT_FLOAT                     { $$ = asd_new($1->valor); }
-     | chamada_funcao                   { $$ = $1; };
-
-unario: unario '!' 			            { $$ = asd_new("!"); if($1 != NULL) { asd_add_child($$, $1);} }
-     |  unario '-' 			            { $$ = asd_new("-"); if($1 != NULL) { asd_add_child($$, $1);} }
-     | 					                { $$ = NULL;};                            
-
+prec1: TK_IDENTIFICADOR                 { $$ = asd_new($1->valor); }
+    | TK_LIT_INT                        { $$ = asd_new($1->valor); }
+    | TK_LIT_FLOAT                      { $$ = asd_new($1->valor); }
+    | chamada_funcao                    { $$ = $1; };
+                          
 %%
 
 void yyerror(char const *mensagem)
