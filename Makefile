@@ -1,30 +1,40 @@
+# Define as variáveis de diretórios
+SRC_DIR = src
+OBJ_DIR = obj
+INC_DIR = include
+
+# Define os arquivos .c que precisam ser compilados
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
+OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+
+# Define as dependências específicas
+DEPS = $(OBJ_DIR)/main.o $(OBJ_DIR)/parser.tab.o $(OBJ_DIR)/lex.yy.o $(OBJ_DIR)/data_structures.o $(OBJ_DIR)/aux.o
+
+# Alvo principal
 all: etapa3
 
-etapa3: obj/main.o obj/parser.tab.o obj/lex.yy.o obj/data_structures.o obj/aux.o
-	gcc -o etapa3 obj/main.o obj/parser.tab.o obj/lex.yy.o obj/data_structures.o obj/aux.o -lfl
+# Alvo para compilar o programa final
+etapa3: $(DEPS)
+	gcc -o etapa3 $(DEPS) -lfl
 
-obj/main.o: src/main.c | src/parser.tab.h include/data_structures.h include/aux.h
-	gcc -c src/main.c -o obj/main.o -Iinclude
+# Regra genérica para compilar todos os arquivos .o
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(SRC_DIR)/parser.tab.h
+	gcc -c $< -o $@ -I$(INC_DIR)
 
-obj/parser.tab.o: src/parser.tab.c
-	gcc -c src/parser.tab.c -o obj/parser.tab.o
+# Regra para gerar o diretório obj caso ele não exista
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
 
-obj/lex.yy.o: src/lex.yy.c
-	gcc -c src/lex.yy.c -o obj/lex.yy.o
+# Regras para gerar o arquivo parser.tab.c e parser.tab.h com bison
+$(SRC_DIR)/parser.tab.c $(SRC_DIR)/parser.tab.h: $(SRC_DIR)/parser.y
+	bison -d $(SRC_DIR)/parser.y -o $(SRC_DIR)/parser.tab.c
 
-obj/data_structures.o: src/data_structures.c include/data_structures.h
-	gcc -c src/data_structures.c -o obj/data_structures.o -Iinclude
+# Regras para gerar o arquivo lex.yy.c com flex
+$(SRC_DIR)/lex.yy.c: $(SRC_DIR)/scanner.l
+	flex -o $(SRC_DIR)/lex.yy.c $(SRC_DIR)/scanner.l
 
-obj/aux.o: src/aux.c include/aux.h
-	gcc -c src/aux.c -o obj/aux.o -Iinclude
-
-src/parser.tab.c src/parser.tab.h: src/parser.y
-	bison -d src/parser.y -o src/parser.tab.c
-
-src/lex.yy.c: src/scanner.l
-	flex -o src/lex.yy.c src/scanner.l
-
+# Limpeza dos arquivos gerados
 clean:
-	rm -f obj/*.o src/parser.tab.c src/parser.tab.h src/lex.yy.c etapa3 saida.dot graph.png
+	rm -rf $(OBJ_DIR) $(SRC_DIR)/parser.tab.c $(SRC_DIR)/parser.tab.h $(SRC_DIR)/lex.yy.c etapa3 saida.dot graph.png
 
 .PHONY: all clean
