@@ -69,8 +69,19 @@
 
 %%
 
-programa: lista_de_funcoes 			                    	        { $$ = $1; arvore = $$; }
-    |                                                               { $$ = NULL; arvore = $$; };                                           
+// -----------------------------------------------------------------------------------
+// Escopo global
+// programa: criar_pilha_tabela empilha_tabela lista_de_funcoes desempilha_tabela destroi_pilha     { $$ = $1; arvore = $$; }
+//     |                                                                                            { $$ = NULL; arvore = $$; }; 
+// -----------------------------------------------------------------------------------  
+
+programa: lista_de_funcoes 	                                        { $$ = $1; arvore = $$; }
+    |                                                               { $$ = NULL; arvore = $$; };
+
+// criar_pilha_tabela:                                                 { /* Criar pilha de tabela de simbolos */};
+// empilha_tabela:                                                     { /* Criar tabela do escopo e empilha */};     
+// desempilha_tabela:                                                  { /* Desempilhar */};   
+// destroi_pilha:                                                      { /* Destruir pilha */};                                
 
 // Rec. a direita para listas pela dica do professor
 lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); }          
@@ -78,26 +89,44 @@ lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; if
 
 funcao: cabecalho corpo				                                { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
 
-cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };		
+// -----------------------------------------------------------------------------------
+// Escopo da funcao 
+// abre apos o '=' e nao apos as primeiras chaves
+// cabecalho: TK_IDENTIFICADOR '=' empilha_tabela lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };	
+// -----------------------------------------------------------------------------------	
+
+cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };  // { /* coloca na tabela que esta EM BAIXO (global) $1 e $5 */ };  
 
 // Rec. a direita para listas pela dica do professor
 lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = NULL; }
         | parametro 			                                    { $$ = NULL; }
         |                                                           { $$ = NULL; };            
 
-parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; };  
+parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; }; // { /* coloca na tabela que esta no topo $1 e $4 */ };  
 
 tipo_variavel: TK_PR_INT		                    { $$ = NULL; } 
              | TK_PR_FLOAT 		                    { $$ = NULL; };   
 
-corpo: bloco_comandos                               { $$ = $1; };                                                   
+corpo: bloco_comandos                               { $$ = $1; };    
+
+// -----------------------------------------------------------------------------------
+// mudar pra bloco de comandos da funcao
+// corpo: bloco_comandos desempilha_tabela          { $$ = $1; };
+// -----------------------------------------------------------------------------------
 
 bloco_comandos: '{' lista_comandos '}'              { $$ = $2; }
               | '{' '}'                             { $$ = NULL; };
 
+// -----------------------------------------------------------------------------------
+// Escopo aninhado
+// Só funciona se esse bloco de comandos não for usado na função - diferenciar bloco de comandos e bloco de comandos da funcao
+// bloco_comandos: '{' empilha_tabela lista_comandos desempilha_tabela'}'              { $$ = $2; }
+//               | '{' '}'                                                             { $$ = NULL; };
+// -----------------------------------------------------------------------------------
+
 // Rec. a direita para listas pela dica do professor
-lista_comandos: comando 		                    { $$ = $1; }  // Tratamento para as variaveis não inicializadas
-              | comando lista_comandos	            { $$ = $1; if(($$ != NULL) && ($2 != NULL)) asd_add_child($$, $2); else if ($2 != NULL ) $$ = $2; }; 
+lista_comandos: comando 		                        { $$ = $1; }  // Tratamento para as variaveis não inicializadas
+              | comando lista_comandos	                { $$ = $1; if(($$ != NULL) && ($2 != NULL)) asd_add_child($$, $2); else if ($2 != NULL ) $$ = $2; }; 
 
 comando: bloco_comandos ';' 		                                     { $$ = $1; }
        | declaracao_variavel ';' 	                                     { $$ = $1; }
@@ -113,7 +142,7 @@ lista_variaveis: variavel ',' lista_variaveis 		                     { if($1 == 
                | variavel				                                 { $$ = $1; };     
 
                                                                          // variaveis não inicializadas não entram na AST (comandos separados)
-variavel: TK_IDENTIFICADOR 				                                 { $$ = NULL; } 
+variavel: TK_IDENTIFICADOR 				                                 { $$ = NULL; } // Mesmo nao inicializada, vai para a tabela de simbolos
         | TK_IDENTIFICADOR TK_OC_LE literal		                         { $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };
 
 literal: TK_LIT_INT   					                                 { $$ = asd_new($1->valor); }  
@@ -129,8 +158,11 @@ ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           { $$ = 
 
 whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos                     { $$ = asd_new("while"); asd_add_child($$,$3);if($5 != NULL){ asd_add_child($$, $5); } };                                            
 
+// checar aqui se identificador ja foi criado procurando na tabela no topo da pilha e nas abaixo
 atribuicao: TK_IDENTIFICADOR '=' expressao                               { $$ = asd_new("="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };                                     
 
+// checar aqui tambem se undeclared - colocar um nao terminal entre o identificador e o '('
+// além disso, checar se é uma função (campo natureza na tabela)
 chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'                { char buffer[256]; snprintf(buffer, sizeof(buffer), "call %s", $1->valor); $$ = asd_new(buffer); asd_add_child($$, $3); };          
 
 lista_argumentos: expressao                                              { $$ = $1; }
@@ -168,7 +200,7 @@ prec1:'!' prec1                         { $$ = asd_new("!"); if($2 != NULL) { as
 
 prec1: '(' expressao ')'                { $$ = $2;};
 
-prec1: TK_IDENTIFICADOR                 { $$ = asd_new($1->valor); }
+prec1: TK_IDENTIFICADOR                 { $$ = asd_new($1->valor); }    // checar aqui também se undeclared
     | TK_LIT_INT                        { $$ = asd_new($1->valor); }
     | TK_LIT_FLOAT                      { $$ = asd_new($1->valor); }
     | chamada_funcao                    { $$ = $1; };

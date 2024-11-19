@@ -4,6 +4,27 @@
 #include "../include/data_structures.h"
 #define ARQUIVO_SAIDA "saida.dot"
 
+lista_tabela_simbolos_t* cria_lista_tabela_simbolos() {
+  lista_tabela_simbolos_t *lista = (lista_tabela_simbolos_t*)malloc(sizeof(lista_tabela_simbolos_t));
+  lista->cabeca = NULL;
+  return lista;
+}
+
+void adiciona_simbolo(lista_tabela_simbolos_t *lista, conteudo_tabela_simbolos_t simbolo) {
+  nodo_tabela_simbolos_t *novo_nodo = (nodo_tabela_simbolos_t*)malloc(sizeof(nodo_tabela_simbolos_t));
+  novo_nodo->simbolo = simbolo;
+  novo_nodo->prox = lista->cabeca;
+  lista->cabeca = novo_nodo;
+}
+
+void print_lista_tabela_simbolos(lista_tabela_simbolos_t *lista) {
+  nodo_tabela_simbolos_t *atual = lista->cabeca;
+  while (atual != NULL) {
+    printf("Linha: %d, Natureza: %s, Tipo: %s, Valor: %s\n", atual->simbolo.linha, atual->simbolo.natureza, atual->simbolo.tipo, atual->simbolo.valor);
+    atual = atual->prox;
+  }
+}
+
 valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor) {
 	valor_lexico_t *valor_lexico = (valor_lexico_t *)malloc(sizeof(valor_lexico_t));
 	if (valor_lexico == NULL) {

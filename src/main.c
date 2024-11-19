@@ -16,6 +16,9 @@ void *arvore = NULL; // Inicializa o ponteiro como NULL
 
 int main (int argc, char **argv)
 {
+  // Fazer aqui ou no parser
+  // 1) criar pilha de tabelas de símbolos
+  // 2) criar tabela do escopo global
   int ret = yyparse();
   exporta(arvore);
   yylex_destroy();   
