@@ -13,6 +13,7 @@ extern int yylex_destroy(void);
 void exporta(void *arvore);
 
 void *arvore = NULL; // Inicializa o ponteiro como NULL
+pilha_tabelas_t *pilha_tabelas = NULL;
 
 int main (int argc, char **argv)
 {
@@ -20,7 +21,7 @@ int main (int argc, char **argv)
   // 1) criar pilha de tabelas de símbolos
   // 2) criar tabela do escopo global
   int ret = yyparse();
-  exporta(arvore);
+  // exporta(arvore);
   yylex_destroy();   
   return ret;
 }

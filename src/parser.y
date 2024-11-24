@@ -1,9 +1,11 @@
 %{
     #include <stdio.h>
     #include <string.h>
+    #include "../include/data_structures.h"
     int yylex(void);
     extern int get_line_number();
     extern void *arvore;
+    extern pilha_tabelas_t *pilha_tabelas;
     void yyerror (char const *mensagem);
 %}
 
@@ -44,6 +46,7 @@
 %type<arvore> tipo_variavel
 %type<arvore> corpo
 %type<arvore> bloco_comandos
+%type<arvore> bloco_comandos_func
 %type<arvore> lista_comandos
 %type<arvore> comando
 %type<arvore> declaracao_variavel
@@ -71,12 +74,28 @@
 
 // -----------------------------------------------------------------------------------
 // Escopo global
-// programa: criar_pilha_tabela empilha_tabela lista_de_funcoes desempilha_tabela destroi_pilha     { $$ = $1; arvore = $$; }
-//     |                                                                                            { $$ = NULL; arvore = $$; }; 
 // -----------------------------------------------------------------------------------  
 
-programa: lista_de_funcoes 	                                        { $$ = $1; arvore = $$; }
-    |                                                               { $$ = NULL; arvore = $$; };
+inicializacao: abre_escopo_global programa fecha_escopo_global         
+
+abre_escopo_global:                                                    { lista_tabela_simbolos_t *tabela_global = cria_lista_tabela_simbolos();
+                                                                         pilha_tabelas = cria_pilha();
+                                                                         empilhar(&pilha_tabelas, tabela_global); };
+
+abre_escopo_func:                                                      { lista_tabela_simbolos_t *tabela_func = cria_lista_tabela_simbolos();
+                                                                         empilhar(&pilha_tabelas, tabela_func); };
+
+abre_escopo_aninhado:                                                  { lista_tabela_simbolos_t *tabela_aninhada = cria_lista_tabela_simbolos();
+                                                                         empilhar(&pilha_tabelas, tabela_aninhada); };
+
+fecha_escopo_global:                                                   { destroi_pilha(pilha_tabelas); };
+
+fecha_escopo_func:                                                     { desempilhar(&pilha_tabelas); };
+
+fecha_escopo_aninhado:                                                 { desempilhar(&pilha_tabelas); };
+
+programa: lista_de_funcoes 	                                           { $$ = $1; arvore = $$; }
+    |                                                                  { $$ = NULL; arvore = $$; };
 
 // criar_pilha_tabela:                                                 { /* Criar pilha de tabela de simbolos */};
 // empilha_tabela:                                                     { /* Criar tabela do escopo e empilha */};     
@@ -84,8 +103,8 @@ programa: lista_de_funcoes 	                                        { $$ = $1; a
 // destroi_pilha:                                                      { /* Destruir pilha */};                                
 
 // Rec. a direita para listas pela dica do professor
-lista_de_funcoes: funcao lista_de_funcoes 	                        { $$ = $1; if($2 != NULL) asd_add_child($$, $2); }          
-        | funcao			                                        { $$ = $1; };         
+lista_de_funcoes: funcao fecha_escopo_func lista_de_funcoes 	    { $$ = $1; if($3 != NULL) asd_add_child($$, $3); }          
+        | funcao fecha_escopo_func		                            { $$ = $1; };         
 
 funcao: cabecalho corpo				                                { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
 
@@ -95,27 +114,33 @@ funcao: cabecalho corpo				                                { $$ = $1; if($2 != N
 // cabecalho: TK_IDENTIFICADOR '=' empilha_tabela lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };	
 // -----------------------------------------------------------------------------------	
 
-cabecalho: TK_IDENTIFICADOR '=' lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };  // { /* coloca na tabela que esta EM BAIXO (global) $1 e $5 */ };  
+// { /* coloca na tabela que esta EM BAIXO (global) $1 e $6 */ };
+cabecalho: TK_IDENTIFICADOR '=' abre_escopo_func lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor); };    
+
 
 // Rec. a direita para listas pela dica do professor
 lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = NULL; }
         | parametro 			                                    { $$ = NULL; }
         |                                                           { $$ = NULL; };            
 
-parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; }; // { /* coloca na tabela que esta no topo $1 e $4 */ };  
+
+ // { /* coloca na tabela que esta no topo $1 e $4 */ }; 
+parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL;
+                                                                      conteudo_tabela_simbolos_t entrada = cria_entrada($1->linha, "IDENTIFICADOR", $4->tipo, $1->valor);
+                                                                      adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); };  
 
 tipo_variavel: TK_PR_INT		                    { $$ = NULL; } 
              | TK_PR_FLOAT 		                    { $$ = NULL; };   
 
-corpo: bloco_comandos                               { $$ = $1; };    
+corpo: bloco_comandos_func                          { $$ = $1; };    
 
-// -----------------------------------------------------------------------------------
-// mudar pra bloco de comandos da funcao
-// corpo: bloco_comandos desempilha_tabela          { $$ = $1; };
-// -----------------------------------------------------------------------------------
 
-bloco_comandos: '{' lista_comandos '}'              { $$ = $2; }
-              | '{' '}'                             { $$ = NULL; };
+bloco_comandos_func: '{' lista_comandos '}'              { $$ = $2; }
+                   | '{' '}'                             { $$ = NULL; };
+
+
+bloco_comandos: '{' abre_escopo_aninhado lista_comandos fecha_escopo_aninhado '}'              { $$ = $3; }
+              | '{' abre_escopo_aninhado fecha_escopo_aninhado'}'                              { $$ = NULL; };
 
 // -----------------------------------------------------------------------------------
 // Escopo aninhado
