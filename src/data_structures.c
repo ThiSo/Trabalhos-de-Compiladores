@@ -8,10 +8,17 @@
  * Função cria_pilha, cria uma pilha vazia.
  */
 pilha_tabelas_t* cria_pilha() {
-    pilha_tabelas_t *nova_pilha = (pilha_tabelas_t*)malloc(sizeof(pilha_tabelas_t));
-    nova_pilha->tabela_simbolos = NULL;
-    nova_pilha->prox = NULL;
-    return nova_pilha;
+
+    pilha_tabelas_t *ret = NULL;
+    ret = (pilha_tabelas_t *) malloc(sizeof(pilha_tabelas_t));
+    if (ret != NULL) {
+        ret->tabela_simbolos = NULL;
+        ret->prox = NULL;
+    } else {
+        printf("Erro: %s não conseguiu alocar memória.\n", __FUNCTION__);
+    }
+
+    return ret;
 }
 
 /*
@@ -41,7 +48,7 @@ void empilhar(pilha_tabelas_t **pilha, lista_tabela_simbolos_t *tabela_simbolos)
  */
 void desempilhar(pilha_tabelas_t **pilha) {
   if (*pilha == NULL) {
-    return;
+      return;
   }
   pilha_tabelas_t *temp = *pilha;
   destroi_lista_tabela_simbolos(temp->tabela_simbolos);
@@ -102,22 +109,29 @@ void adiciona_entrada(lista_tabela_simbolos_t *lista, conteudo_tabela_simbolos_t
 
 
 void print_lista_tabela_simbolos(lista_tabela_simbolos_t *lista) {
-  nodo_tabela_simbolos_t *atual = lista->cabeca;
-  while (atual != NULL) {
-    printf("Linha: %d, Natureza: %s, Tipo: %s, Valor: %s\n", atual->entrada.linha, atual->entrada.natureza, atual->entrada.tipo, atual->entrada.valor);
-    atual = atual->prox;
+  if (lista != NULL){
+    nodo_tabela_simbolos_t *atual = lista->cabeca;
+    while (atual != NULL) {
+      printf("Linha: %d, Natureza: %s, Tipo: %s, Valor: %s\n", atual->entrada.linha, atual->entrada.natureza, atual->entrada.tipo, atual->entrada.valor);
+      atual = atual->prox;
+    }
   }
 }
 
 void destroi_lista_tabela_simbolos(lista_tabela_simbolos_t *lista) {
-  nodo_tabela_simbolos_t *atual = lista->cabeca;
-  nodo_tabela_simbolos_t *prox;
-  while (atual != NULL) {
-    prox = atual->prox;
-    free(atual);
-    atual = prox;
+  if (lista != NULL) {
+    nodo_tabela_simbolos_t *atual = lista->cabeca;
+    nodo_tabela_simbolos_t *prox;
+    while (atual != NULL) {
+      prox = atual->prox;
+      free(atual->entrada.natureza);
+      free(atual->entrada.tipo);
+      free(atual->entrada.valor);
+      free(atual);
+      atual = prox;
+    }
+    free(lista);
   }
-  free(lista);
 }
 
 valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor) {
@@ -130,6 +144,18 @@ valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char*
 	valor_lexico->tipo_token = strdup(tipo_token);
 	valor_lexico->valor = strdup(valor);
 	return valor_lexico;
+}
+
+asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int minimo_filhos)
+{
+  if (tree != NULL) {
+    asd_tree_t *node = tree;
+    while (node->number_of_children > minimo_filhos) {
+      node = node->children[node->number_of_children - 1];
+    }
+    return node;
+  }
+  else return NULL;
 }
 
 asd_tree_t *asd_new(const char *label)

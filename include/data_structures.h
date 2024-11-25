@@ -27,7 +27,6 @@ typedef struct conteudo_tabela_simbolos {
 
 typedef struct nodo_tabela_simbolos {
     conteudo_tabela_simbolos_t entrada;
-    int num_entradas;
     struct nodo_tabela_simbolos *prox;
 } nodo_tabela_simbolos_t;
 
@@ -100,6 +99,10 @@ void print_lista_tabela_simbolos(lista_tabela_simbolos_t *lista);
 
 valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor);
 
+/*
+ * Função corrige_ordem_filhos, corrige a ordem de filhos na ast.
+ */
+asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int min_number_of_children);
 /*
  * Função asd_new, cria um nó sem filhos com o label informado.
  */
