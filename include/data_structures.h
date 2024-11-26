@@ -3,7 +3,7 @@
 
 
 typedef struct asd_tree {
-  char *tipo;       // Int ou float
+  char *tipo;       // Int, float ou atribuir depois
   char *label;
   int number_of_children;
   struct asd_tree **children;
@@ -62,9 +62,9 @@ void empilhar(pilha_tabelas_t **pilha, tabela_simbolos_t *tabela_simbolos);
 void desempilhar(pilha_tabelas_t **pilha);
 
 /*
- * Função print_pilha, imprime todas as tabelas de símbolos na pilha.
+ * Função printa_pilha, imprime todas as tabelas de símbolos na pilha.
  */
-void print_pilha(pilha_tabelas_t *pilha);
+void printa_pilha(pilha_tabelas_t *pilha);
 
 
 /*
@@ -106,9 +106,9 @@ void destroi_tabela_simbolos(tabela_simbolos_t *tabela);
 
 
 /*
- * Função print_lista_tabela_simbolos, imprime a lista de símbolos.
+ * Função printa_tabela_simbolos, imprime a lista de símbolos.
  */
-void print_tabela_simbolos(tabela_simbolos_t *tabela);
+void printa_tabela_simbolos(tabela_simbolos_t *tabela);
 
 
 // ----------------------------------------------------------
@@ -125,6 +125,8 @@ asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int min_number_of_children);
  */
 valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor);
 
+
+asd_tree_t *asd_tipo(const char *tipo);
 
 /*
  * Função asd_new, cria um nó sem filhos com o label informado.

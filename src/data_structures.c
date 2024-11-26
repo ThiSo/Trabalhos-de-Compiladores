@@ -81,11 +81,11 @@ conteudo_tabela_simbolos_t *busca_entrada_pilha(pilha_tabelas_t *pilha, const ch
 }
 
 /*
- * Função print_pilha, imprime todas as tabelas de símbolos na pilha.
+ * Função printa_pilha, imprime todas as tabelas de símbolos na pilha.
  */
-void print_pilha(pilha_tabelas_t *pilha) {
+void printa_pilha(pilha_tabelas_t *pilha) {
     while (pilha != NULL) {
-        print_tabela_simbolos(pilha->tabela_simbolos);
+        printa_tabela_simbolos(pilha->tabela_simbolos);
         pilha = pilha->prox;
     }
 }
@@ -165,7 +165,7 @@ void destroi_tabela_simbolos(tabela_simbolos_t *tabela)
 }
 
 
-void print_tabela_simbolos(tabela_simbolos_t *tabela)
+void printa_tabela_simbolos(tabela_simbolos_t *tabela)
 {
     if (tabela != NULL) {
         for (int i = 0; i < tabela->numero_de_entradas; i++) {
@@ -174,6 +174,8 @@ void print_tabela_simbolos(tabela_simbolos_t *tabela)
                 tipo = "INT";
             } else if (strcmp(tabela->entradas[i]->tipo, "float") == 0) {
                 tipo = "FLOAT";
+            } else if(strcmp(tabela->entradas[i]->tipo, "ATRIBUIR DEPOIS") == 0){
+                tipo = "ATRIBUIR DEPOIS";
             } else {
                 tipo = "ERRO";
             }
@@ -215,6 +217,16 @@ asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int minimo_filhos)
   else return NULL;
 }
 
+asd_tree_t *asd_tipo(const char *tipo)
+{
+  asd_tree_t *ret = NULL;
+  ret = calloc(1, sizeof(asd_tree_t));
+  if (ret != NULL){
+    ret->tipo = strdup(tipo);
+  }
+  return ret;
+}
+
 
 
 asd_tree_t *asd_new(const char *label)
@@ -222,6 +234,7 @@ asd_tree_t *asd_new(const char *label)
   asd_tree_t *ret = NULL;
   ret = calloc(1, sizeof(asd_tree_t));
   if (ret != NULL){
+    ret->tipo = NULL;
     ret->label = strdup(label);
     ret->number_of_children = 0;
     ret->children = NULL;
