@@ -25,22 +25,21 @@ typedef struct conteudo_tabela_simbolos {
 } conteudo_tabela_simbolos_t;
 
 
-typedef struct nodo_tabela_simbolos {
-    conteudo_tabela_simbolos_t entrada;
-    struct nodo_tabela_simbolos *prox;
-} nodo_tabela_simbolos_t;
-
-
-typedef struct lista_tabela_simbolos {
-    nodo_tabela_simbolos_t *cabeca;
-} lista_tabela_simbolos_t;
+typedef struct tabela_simbolos {
+    int numero_de_entradas;
+    conteudo_tabela_simbolos_t **entradas;
+} tabela_simbolos_t;
 
 
 typedef struct pilha {
-    lista_tabela_simbolos_t *tabela_simbolos;
+    tabela_simbolos_t *tabela_simbolos;
     struct pilha *prox;
 } pilha_tabelas_t;
 
+
+// ----------------------------------------------------------
+//                      Funções pilha 
+// ----------------------------------------------------------
 
 /*
  * Função cria_pilha, cria uma pilha vazia.
@@ -55,7 +54,7 @@ void destroi_pilha(pilha_tabelas_t *pilha) ;
 /*
  * Função empilhar, empilha uma tabela de símbolos.
  */
-void empilhar(pilha_tabelas_t **pilha, lista_tabela_simbolos_t *tabela_simbolos);
+void empilhar(pilha_tabelas_t **pilha, tabela_simbolos_t *tabela_simbolos);
 
 /*
  * Função desempilhar, desempilha uma tabela de símbolos.
@@ -63,46 +62,70 @@ void empilhar(pilha_tabelas_t **pilha, lista_tabela_simbolos_t *tabela_simbolos)
 void desempilhar(pilha_tabelas_t **pilha);
 
 /*
- * Função buscar_entrada, busca uma entrada na pilha de tabelas de símbolos.
- */
-conteudo_tabela_simbolos_t* buscar_entrada(pilha_tabelas_t *pilha, const char *valor);
-
-/*
  * Função print_pilha, imprime todas as tabelas de símbolos na pilha.
  */
 void print_pilha(pilha_tabelas_t *pilha);
 
+
+/*
+ * Função buscar_entrada, busca uma entrada na pilha de tabelas de símbolos.
+ */
+conteudo_tabela_simbolos_t* busca_entrada_pilha(pilha_tabelas_t *pilha, const char *valor);
+
+
+// ----------------------------------------------------------
+//                      Funções tabela 
+// ----------------------------------------------------------
 /*
  * Função cria_lista_tabela_simbolos, cria uma lista vazia.
  */
-lista_tabela_simbolos_t* cria_lista_tabela_simbolos();
+tabela_simbolos_t* cria_tabela_simbolos();
 
 /*
  * Função cria_entrada, cria uma entrada na tabela de símbolos.
  */
-conteudo_tabela_simbolos_t cria_entrada(int linha, const char *natureza, const char *tipo, const char *valor);
+conteudo_tabela_simbolos_t *cria_entrada(int linha, const char *natureza, const char *tipo, const char *valor);
+
 
 /*
- * Função destroi_lista_tabela_simbolos, libera a memória alocada para a lista.
+ * Função busca_entrada, busca uma entrada na tabela de símbolos.
  */
-void destroi_lista_tabela_simbolos(lista_tabela_simbolos_t *lista);
+conteudo_tabela_simbolos_t *busca_entrada_tabela(tabela_simbolos_t *tabela, const char *valor);
+
 
 /*
  * Função adiciona_simbolo, adiciona um símbolo à lista.
  */
-void adiciona_entrada(lista_tabela_simbolos_t *lista, conteudo_tabela_simbolos_t simbolo);
+void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *entrada);
+
+
+/*
+ * Função destroi_tabela_simbolos, libera a memória alocada para a lista.
+ */
+void destroi_tabela_simbolos(tabela_simbolos_t *tabela);
+
 
 /*
  * Função print_lista_tabela_simbolos, imprime a lista de símbolos.
  */
-void print_lista_tabela_simbolos(lista_tabela_simbolos_t *lista);
+void print_tabela_simbolos(tabela_simbolos_t *tabela);
 
-valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor);
+
+// ----------------------------------------------------------
+//                      Funções etapa 3 
+// ----------------------------------------------------------
 
 /*
- * Função corrige_ordem_filhos, corrige a ordem de filhos na ast.
+ * Função corrige_ordem_filhos, necessária para corrigir erro na etapa 3.
  */
 asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int min_number_of_children);
+
+/*
+ * Função cria_valor_lexico, cria um valor léxico.
+ */
+valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor);
+
+
 /*
  * Função asd_new, cria um nó sem filhos com o label informado.
  */

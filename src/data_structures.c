@@ -2,7 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../include/data_structures.h"
+#include "../include/erros.h"
 #define ARQUIVO_SAIDA "saida.dot"
+
+
+// -------------------------------------------
+//            Funções Pilha
+// -------------------------------------------
 
 /*
  * Função cria_pilha, cria uma pilha vazia.
@@ -25,18 +31,21 @@ pilha_tabelas_t* cria_pilha() {
  * Função destroi_pilha, libera a memória alocada para a pilha.
  */
 void destroi_pilha(pilha_tabelas_t *pilha) {
-    while (pilha != NULL) {
-        pilha_tabelas_t *temp = pilha;
-        pilha = pilha->prox;
-        destroi_lista_tabela_simbolos(temp->tabela_simbolos);
-        free(temp);
+  while (pilha != NULL) {
+    pilha_tabelas_t *temp = pilha;
+    pilha = pilha->prox;
+    if (temp->tabela_simbolos != NULL) {
+      destroi_tabela_simbolos(temp->tabela_simbolos);
     }
+    free(temp);
+  }
 }
+
 
 /*
  * Função empilhar, adiciona uma nova tabela de símbolos no topo da pilha.
  */
-void empilhar(pilha_tabelas_t **pilha, lista_tabela_simbolos_t *tabela_simbolos) {
+void empilhar(pilha_tabelas_t **pilha, tabela_simbolos_t *tabela_simbolos) {
     pilha_tabelas_t *nova_pilha = (pilha_tabelas_t*)malloc(sizeof(pilha_tabelas_t));
     nova_pilha->tabela_simbolos = tabela_simbolos;
     nova_pilha->prox = *pilha;
@@ -51,26 +60,24 @@ void desempilhar(pilha_tabelas_t **pilha) {
       return;
   }
   pilha_tabelas_t *temp = *pilha;
-  destroi_lista_tabela_simbolos(temp->tabela_simbolos);
+  destroi_tabela_simbolos(temp->tabela_simbolos);
   *pilha = (*pilha)->prox;
   free(temp);
 }
 
 /*
- * Função buscar_entrada, busca uma entrada na pilha de tabelas de símbolos.
+ * Função busca_entrada_pilha, busca uma entrada na pilha de tabelas de símbolos.
  */
-conteudo_tabela_simbolos_t* buscar_entrada(pilha_tabelas_t *pilha, const char *valor) {
-    while (pilha != NULL) {
-        nodo_tabela_simbolos_t *nodo = pilha->tabela_simbolos->cabeca;
-        while (nodo != NULL) {
-            if (strcmp(nodo->entrada.valor, valor) == 0) {
-                return &nodo->entrada;
-            }
-            nodo = nodo->prox;
-        }
-        pilha = pilha->prox;
+conteudo_tabela_simbolos_t *busca_entrada_pilha(pilha_tabelas_t *pilha, const char *valor)
+{ 
+  while (pilha != NULL) {
+    conteudo_tabela_simbolos_t *entrada = busca_entrada_tabela(pilha->tabela_simbolos, valor);
+    if (entrada != NULL) {
+      return entrada;
     }
-    return NULL;
+    pilha = pilha->prox;
+  }
+  return NULL;
 }
 
 /*
@@ -78,61 +85,111 @@ conteudo_tabela_simbolos_t* buscar_entrada(pilha_tabelas_t *pilha, const char *v
  */
 void print_pilha(pilha_tabelas_t *pilha) {
     while (pilha != NULL) {
-        print_lista_tabela_simbolos(pilha->tabela_simbolos);
+        print_tabela_simbolos(pilha->tabela_simbolos);
         pilha = pilha->prox;
     }
 }
 
-lista_tabela_simbolos_t* cria_lista_tabela_simbolos() {
-  lista_tabela_simbolos_t *lista = (lista_tabela_simbolos_t*)malloc(sizeof(lista_tabela_simbolos_t));
-  lista->cabeca = NULL;
-  return lista;
+// -------------------------------------------
+//            Funções Tabela de símbolos
+// -------------------------------------------
+
+tabela_simbolos_t* cria_tabela_simbolos() {
+  tabela_simbolos_t *ret = (tabela_simbolos_t *)calloc(1, sizeof(tabela_simbolos_t));
+  if (ret == NULL) {
+    fprintf(stderr, "Erro: %s não conseguiu alocar memória.\n", __FUNCTION__);
+    return NULL;
+  }
+  ret->numero_de_entradas = 0;
+  ret->entradas = NULL;
+  return ret;
 }
 
 
-conteudo_tabela_simbolos_t cria_entrada(int linha, const char *natureza, const char *tipo, const char *valor) {
-  conteudo_tabela_simbolos_t entrada;
-  entrada.linha = linha;
-  entrada.natureza = strdup(natureza);
-  entrada.tipo = strdup(tipo);
-  entrada.valor = strdup(valor);
-  return entrada;
+conteudo_tabela_simbolos_t* cria_entrada(int linha, const char *natureza, const char *tipo, const char *valor) {
+  conteudo_tabela_simbolos_t *ret = (conteudo_tabela_simbolos_t *)calloc(1, sizeof(conteudo_tabela_simbolos_t));
+  if (ret != NULL) {
+    ret->linha = linha;
+    ret->natureza = strdup(natureza);
+    ret->tipo = strdup(tipo);
+    ret->valor = strdup(valor);
+  } else {
+    fprintf(stderr, "Erro: %s não conseguiu alocar memória.\n", __FUNCTION__);
+  }
+  return ret;
 }
 
 
-void adiciona_entrada(lista_tabela_simbolos_t *lista, conteudo_tabela_simbolos_t entrada) {
-  nodo_tabela_simbolos_t *novo_nodo = (nodo_tabela_simbolos_t*)malloc(sizeof(nodo_tabela_simbolos_t));
-  novo_nodo->entrada = entrada;
-  novo_nodo->prox = lista->cabeca;
-  lista->cabeca = novo_nodo;
-}
+conteudo_tabela_simbolos_t *busca_entrada_tabela(tabela_simbolos_t *tabela, const char *valor)
+{
+  if (tabela == NULL) {
+    printf("Erro: %s recebeu parâmetro tabela = %p.\n", __FUNCTION__, tabela);
+    return NULL;
+  }
 
-
-void print_lista_tabela_simbolos(lista_tabela_simbolos_t *lista) {
-  if (lista != NULL){
-    nodo_tabela_simbolos_t *atual = lista->cabeca;
-    while (atual != NULL) {
-      printf("Linha: %d, Natureza: %s, Tipo: %s, Valor: %s\n", atual->entrada.linha, atual->entrada.natureza, atual->entrada.tipo, atual->entrada.valor);
-      atual = atual->prox;
+  for (int i = 0; i < tabela->numero_de_entradas; i++) {
+    if (strcmp(tabela->entradas[i]->valor, valor) == 0) {
+      return tabela->entradas[i];
     }
   }
+
+  return NULL;
 }
 
-void destroi_lista_tabela_simbolos(lista_tabela_simbolos_t *lista) {
-  if (lista != NULL) {
-    nodo_tabela_simbolos_t *atual = lista->cabeca;
-    nodo_tabela_simbolos_t *prox;
-    while (atual != NULL) {
-      prox = atual->prox;
-      free(atual->entrada.natureza);
-      free(atual->entrada.tipo);
-      free(atual->entrada.valor);
-      free(atual);
-      atual = prox;
+
+void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *entrada) {
+  if (tabela != NULL && entrada != NULL) {
+        conteudo_tabela_simbolos_t *ret = busca_entrada_tabela(tabela, entrada->valor);
+        if (ret != NULL) {
+            fprintf(stderr, "Identificador '%s' (%s) na linha %d já declarado na linha %d\n", entrada->valor, strcmp(entrada->natureza, "FUNCAO") == 0 ? "função" : "variável", entrada->linha, ret->linha);
+            exit(ERR_DECLARED); 
+        }
+        tabela->numero_de_entradas++;
+        tabela->entradas = realloc(tabela->entradas, tabela->numero_de_entradas * sizeof(conteudo_tabela_simbolos_t *));   
+        tabela->entradas[tabela->numero_de_entradas-1] = entrada;
+    } else {
+        printf("Erro: %s recebeu parâmetro tabela = %p / entrada = %p.\n", __FUNCTION__, tabela, entrada);
     }
-    free(lista);
-  }
 }
+
+
+
+void destroi_tabela_simbolos(tabela_simbolos_t *tabela)
+{
+  if (tabela == NULL) {
+    printf("Erro: %s recebeu parâmetro tabela = %p.\n", __FUNCTION__, tabela);
+    return;
+  }
+  free(tabela->entradas);
+  free(tabela);
+}
+
+
+void print_tabela_simbolos(tabela_simbolos_t *tabela)
+{
+    if (tabela != NULL) {
+        for (int i = 0; i < tabela->numero_de_entradas; i++) {
+            char *tipo;
+            if (strcmp(tabela->entradas[i]->tipo, "int") == 0) {
+                tipo = "INT";
+            } else if (strcmp(tabela->entradas[i]->tipo, "float") == 0) {
+                tipo = "FLOAT";
+            } else {
+                tipo = "ERRO";
+            }
+            char *natureza = strcmp(tabela->entradas[i]->natureza, "FUNCAO") == 0 ? "FUNCAO" : "IDENTIFICADOR";
+            printf("Linha: %3d\tValor: %s\tTipo: %s\tNatureza: %s\n", tabela->entradas[i]->linha, tabela->entradas[i]->valor, tipo, natureza);
+        }
+    } else {
+        printf("Erro: %s recebeu parâmetro tabela = %p.\n", __FUNCTION__, tabela);
+    }
+}
+
+
+// -------------------------------------------
+//            Funções etapa 3
+// -------------------------------------------
+
 
 valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor) {
 	valor_lexico_t *valor_lexico = (valor_lexico_t *)malloc(sizeof(valor_lexico_t));
@@ -157,6 +214,8 @@ asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int minimo_filhos)
   }
   else return NULL;
 }
+
+
 
 asd_tree_t *asd_new(const char *label)
 {

@@ -78,14 +78,14 @@
 
 inicializacao: abre_escopo_global programa fecha_escopo_global         
 
-abre_escopo_global:                                                    { lista_tabela_simbolos_t *tabela_global = cria_lista_tabela_simbolos();
+abre_escopo_global:                                                    { tabela_simbolos_t *tabela_global = cria_tabela_simbolos();
                                                                          pilha_tabelas = cria_pilha();
                                                                          empilhar(&pilha_tabelas, tabela_global); };
 
-abre_escopo_func:                                                      { lista_tabela_simbolos_t *tabela_func = cria_lista_tabela_simbolos();
+abre_escopo_func:                                                      { tabela_simbolos_t *tabela_func = cria_tabela_simbolos();
                                                                          empilhar(&pilha_tabelas, tabela_func); };
 
-abre_escopo_aninhado:                                                  { lista_tabela_simbolos_t *tabela_aninhada = cria_lista_tabela_simbolos();
+abre_escopo_aninhado:                                                  { tabela_simbolos_t *tabela_aninhada = cria_tabela_simbolos();
                                                                          empilhar(&pilha_tabelas, tabela_aninhada); };
 
 fecha_escopo_global:                                                   { destroi_pilha(pilha_tabelas); };
@@ -124,11 +124,9 @@ lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = NULL;
 
 
  // { /* coloca na tabela que esta no topo $1 e $4 */ }; 
-parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; };  
-
-// parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL; 
-//                                                                       conteudo_tabela_simbolos_t entrada = cria_entrada($1->linha, "IDENTIFICADOR", $4->tipo, $1->valor);
-//                                                                       adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada);}; */ 
+parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL;
+                                                                      conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", $4->tipo, $1->valor);
+                                                                      adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); };
 
 tipo_variavel: TK_PR_INT		                         { $$ = NULL; } 
              | TK_PR_FLOAT 		                         { $$ = NULL; };   
