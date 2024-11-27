@@ -12,6 +12,7 @@
 %code requires {
     #include "../include/data_structures.h"
     #include "../include/aux.h"
+    #include "../include/erros.h"
 }
 
 %union {
@@ -79,8 +80,8 @@
 inicializacao: abre_escopo_global programa fecha_escopo_global         
 
 abre_escopo_global:                                                    { tabela_simbolos_t *tabela_global = cria_tabela_simbolos();
-                                                                         pilha_tabelas = cria_pilha();
-                                                                         empilhar(&pilha_tabelas, tabela_global); };
+                                                                         // Pilha deve ser inicializada com a tabela global (atualizaçao na spec)
+                                                                         pilha_tabelas = cria_pilha(tabela_global); };
 
 abre_escopo_func:                                                      { tabela_simbolos_t *tabela_func = cria_tabela_simbolos();
                                                                          empilhar(&pilha_tabelas, tabela_func); };
@@ -107,7 +108,7 @@ funcao: cabecalho corpo				                                   { $$ = $1; if($2 !
 // abre apos o '=' e nao apos as primeiras chaves	
 // -----------------------------------------------------------------------------------	
 
-// { /* coloca na tabela que esta EM BAIXO (global) $1 e $6 */ };
+// { /* segundo o professor, colocar na tabela que está EM BAIXO (global) $1 e $6 */ };
 cabecalho: TK_IDENTIFICADOR '=' abre_escopo_func lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor);
                                                                                           conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "FUNCAO", $6->tipo, $1->valor);
                                                                                           adiciona_entrada(pilha_tabelas->prox->tabela_simbolos, entrada);};    
@@ -123,11 +124,11 @@ parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL;
                                                                       conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", $4->tipo, $1->valor);
                                                                       adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada);};
 
-tipo_variavel: TK_PR_INT		                         { $$ = asd_tipo("int"); } 
-             | TK_PR_FLOAT 		                         { $$ = asd_tipo("float"); };   
+// necessária criação de um nodo com tipo aqui, pois os nodos criados com asd_new sempre vem com tipo = NULL, e na etapa 3 essa regra era apenas $$ = NULL
+tipo_variavel: TK_PR_INT		                         { $$ = cria_tipo("INT"); } 
+             | TK_PR_FLOAT 		                         { $$ = cria_tipo("FLOAT"); };   
 
 corpo: bloco_comandos_func                               { $$ = $1; };    
-
 
 bloco_comandos_func: '{' lista_comandos '}'              { $$ = $2; }
                    | '{' '}'                             { $$ = NULL; };
@@ -140,7 +141,7 @@ bloco_comandos: '{' abre_escopo_aninhado lista_comandos fecha_escopo_aninhado '}
 // Escopo aninhado
 // -----------------------------------------------------------------------------------
 
-lista_comandos: comando 		                                         { $$ = $1; }  // Tratamento para as variaveis não inicializadas
+lista_comandos: comando 		                                         { $$ = $1; }       // Tratamento para as variaveis não inicializadas
               | comando lista_comandos	            	                 { $$ = $1; if(($$ != NULL) && ($2 != NULL)) asd_add_child($$, $2); else if ($2 != NULL ) $$ = $2; } 
               | declaracao_variavel ';' lista_comandos		             { $$ = $1; if ($$ != NULL) { if($3 != NULL) asd_add_child(corrige_ordem_filhos($$, 2), $3); } else $$ = $3; }
               | declaracao_variavel ';' 	                             { $$ = $1; };
@@ -151,11 +152,14 @@ comando: bloco_comandos ';' 		                                     { $$ = $1; }
        | chamada_funcao ';' 		                                     { $$ = $1; }
        | controle_fluxo ';'		                                         { $$ = $1; };
 
-declaracao_variavel: tipo_variavel lista_variaveis	                     { $$ = $2; };   
+// Atribuir tipos deixados na tabela como "atribuir depois" aqui
+declaracao_variavel: tipo_variavel lista_variaveis	                     { $$ = $2;
+                                                                           atribui_tipo(pilha_tabelas->tabela_simbolos, $1->tipo);
+                                                                           // printa_tabela_simbolos(pilha_tabelas->tabela_simbolos); 
+                                                                           // printf("Quantidade de entradas na tabela atual: %d\n", pilha_tabelas->tabela_simbolos->numero_de_entradas); 
+                                                                         };   
 
                                                                          // variaveis não inicializadas não entram na AST (mesmo comando)
-
-
 lista_variaveis: variavel ',' lista_variaveis 		                     { if($1 == NULL) $$ = $3; else { $$ = $1; if ($3 != NULL) asd_add_child($$, $3); }};       
                | variavel				                                 { $$ = $1; };     
 
@@ -168,9 +172,10 @@ variavel: TK_IDENTIFICADOR 				                                 { $$ = NULL;
                                                                            conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
                                                                            adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); };
 
-
-literal: TK_LIT_INT   					                                 { $$ = asd_new($1->valor); }  
-       | TK_LIT_FLOAT 					                                 { $$ = asd_new($1->valor); };                                         
+literal: TK_LIT_INT   					                                 { $$ = asd_new($1->valor);
+                                                                           $$->tipo = strdup("INT"); }  
+       | TK_LIT_FLOAT 					                                 { $$ = asd_new($1->valor);
+                                                                           $$->tipo = strdup("FLOAT"); };                                         
 
 retorno: TK_PR_RETURN expressao				                             { $$ = asd_new("return"), asd_add_child($$, $2); };                                                                    
                                                      
@@ -182,53 +187,123 @@ ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           { $$ = 
 
 whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos                     { $$ = asd_new("while"); asd_add_child($$,$3);if($5 != NULL){ asd_add_child($$, $5); } };                                            
 
+// --------------------------------------------------------------
 
 // checar aqui se identificador ja foi criado procurando na tabela no topo da pilha e nas abaixo
-atribuicao: TK_IDENTIFICADOR '=' expressao                               { $$ = asd_new("="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); };                                     
+// checar também se identificador está sendo usado corretamente (erro function -> se função é usada como variável)
+// comando de atribuição deve ter inferência de tipo e "passar pra cima" o seu tipo com base na tabela  
+atribuicao: TK_IDENTIFICADOR '=' expressao                               { $$ = asd_new("="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); 
+                                                                           conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, $1->valor);
+                                                                           if (checa_id == NULL)
+                                                                                printa_erro(ERR_UNDECLARED, $1->valor, $1->linha, $1->linha);
+                                                                           else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
+                                                                                printa_erro(ERR_FUNCTION, checa_id->valor, $1->linha, $1->linha);
+                                                                           $$->tipo = checa_id->tipo;
+                                                                         };                                     
 
-
-// checar aqui tambem se undeclared - colocar um nao terminal entre o identificador e o '('
-// além disso, checar se é uma função (campo natureza na tabela)
-chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'                { char buffer[256]; snprintf(buffer, sizeof(buffer), "call %s", $1->valor); $$ = asd_new(buffer); asd_add_child($$, $3); };          
+// checar aqui tambem se undeclared
+// além disso, checar se está sendo usado corretamente (erro variable -> variavel utilizada como função)
+chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'                { char buffer[256]; snprintf(buffer, sizeof(buffer), "call %s", $1->valor); $$ = asd_new(buffer); asd_add_child($$, $3); 
+                                                                           conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, $1->valor);
+                                                                           if (checa_id == NULL)
+                                                                                printa_erro(ERR_UNDECLARED, $1->valor, $1->linha, $1->linha);
+                                                                           else if(strcmp(checa_id->natureza, "IDENTIFICADOR") == 0)
+                                                                                printa_erro(ERR_VARIABLE, checa_id->valor, $1->linha, $1->linha);
+                                                                         };           
 
 lista_argumentos: expressao                                              { $$ = $1; }
                 | expressao ',' lista_argumentos                         { $$ = $1; asd_add_child($$, $3); };
 
+// Adicionar inferência de tipo aqui
+// (int, int) -> int
+// (float, float) -> float
+// (float, int) -> float
+expressao: expressao TK_OC_OR prec6     { $$ = asd_new("|"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
 
-expressao: expressao TK_OC_OR prec6     { $$ = asd_new("|"); asd_add_child($$, $1); asd_add_child($$, $3); }; 
 expressao: prec6                        { $$ = $1; };
 
-prec6: prec6 TK_OC_AND prec5            { $$ = asd_new("&"); asd_add_child($$, $1); asd_add_child($$, $3); }; 
+prec6: prec6 TK_OC_AND prec5            { $$ = asd_new("&"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; }; 
+
 prec6: prec5                            { $$ = $1; };
 
-prec5: prec5 TK_OC_EQ prec4             { $$ = asd_new("=="); asd_add_child($$, $1); asd_add_child($$, $3); };
-prec5: prec5 TK_OC_NE prec4             { $$ = asd_new("!="); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec5: prec5 TK_OC_EQ prec4             { $$ = asd_new("=="); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
+prec5: prec5 TK_OC_NE prec4             { $$ = asd_new("!="); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
 prec5: prec4                            { $$ = $1; };
 
-prec4: prec4 '<' prec3                  { $$ = asd_new("<"); asd_add_child($$, $1); asd_add_child($$, $3); };
-prec4: prec4 '>' prec3                  { $$ = asd_new(">"); asd_add_child($$, $1); asd_add_child($$, $3); };
-prec4: prec4 TK_OC_LE prec3             { $$ = asd_new("<="); asd_add_child($$, $1); asd_add_child($$, $3); };
-prec4: prec4 TK_OC_GE prec3             { $$ = asd_new(">="); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec4: prec4 '<' prec3                  { $$ = asd_new("<"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
+prec4: prec4 '>' prec3                  { $$ = asd_new(">"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
+prec4: prec4 TK_OC_LE prec3             { $$ = asd_new("<="); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
+prec4: prec4 TK_OC_GE prec3             { $$ = asd_new(">="); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
 prec4: prec3                            { $$ = $1; };
 
-prec3: prec3 '+' prec2                  { $$ = asd_new("+"); asd_add_child($$, $1); asd_add_child($$, $3); };
-prec3: prec3 '-' prec2                  { $$ = asd_new("-"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec3: prec3 '+' prec2                  { $$ = asd_new("+"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
+prec3: prec3 '-' prec2                  { $$ = asd_new("-"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
 prec3: prec2                            { $$ = $1; };  
 
-prec2: prec2 '*' prec1                  { $$ = asd_new("*"); asd_add_child($$, $1); asd_add_child($$, $3); };
-prec2: prec2 '/' prec1                  { $$ = asd_new("/"); asd_add_child($$, $1); asd_add_child($$, $3); };
-prec2: prec2 '%' prec1                  { $$ = asd_new("%"); asd_add_child($$, $1); asd_add_child($$, $3); };
+prec2: prec2 '*' prec1                  { $$ = asd_new("*"); asd_add_child($$, $1); asd_add_child($$, $3); 
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
+prec2: prec2 '/' prec1                  { $$ = asd_new("/"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
+prec2: prec2 '%' prec1                  { $$ = asd_new("%"); asd_add_child($$, $1); asd_add_child($$, $3);
+                                          char* tipo = infere_tipo($1->tipo, $3->tipo);
+                                          $$->tipo = tipo; };
+
 prec2: prec1                            { $$ = $1; };
 
-// Recursão a esquerda aqui gera erros de redução
-prec1:'!' prec1                         { $$ = asd_new("!"); if($2 != NULL) { asd_add_child($$, $2);} }
-    | '-' prec1                         { $$ = asd_new("-"); if($2 != NULL) { asd_add_child($$, $2);} };
+prec1:'!' prec1                         { $$ = asd_new("!"); if($2 != NULL) { asd_add_child($$, $2);}
+                                          $$->tipo = $2->tipo; }
+    | '-' prec1                         { $$ = asd_new("-"); if($2 != NULL) { asd_add_child($$, $2);} 
+                                          $$->tipo = $2->tipo; };
 
 prec1: '(' expressao ')'                { $$ = $2;};
 
-prec1: TK_IDENTIFICADOR                 { $$ = asd_new($1->valor); }    // checar aqui também se undeclared
-    | TK_LIT_INT                        { $$ = asd_new($1->valor); }
-    | TK_LIT_FLOAT                      { $$ = asd_new($1->valor); }
+// checar aqui também se undeclared, da mesma forma que na atribuição
+prec1:TK_IDENTIFICADOR                  { $$ = asd_new($1->valor); 
+                                          conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, $1->valor);
+                                          if (checa_id == NULL)
+                                            printa_erro(ERR_UNDECLARED, $1->valor, $1->linha, $1->linha);
+                                          else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
+                                            printa_erro(ERR_FUNCTION, checa_id->valor, $1->linha, $1->linha);
+                                          $$->tipo = checa_id->tipo; };
+
+    | TK_LIT_INT                        { $$ = asd_new($1->valor); 
+                                          $$->tipo = strdup("INT"); }
+
+    | TK_LIT_FLOAT                      { $$ = asd_new($1->valor); 
+                                          $$->tipo = strdup("FLOAT"); }
+                                          
     | chamada_funcao                    { $$ = $1; };
                           
 %%

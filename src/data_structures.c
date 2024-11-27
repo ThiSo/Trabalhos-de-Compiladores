@@ -13,12 +13,12 @@
 /*
  * Função cria_pilha, cria uma pilha vazia.
  */
-pilha_tabelas_t* cria_pilha() {
+pilha_tabelas_t* cria_pilha(tabela_simbolos_t *tabela_simbolos) {
 
     pilha_tabelas_t *ret = NULL;
     ret = (pilha_tabelas_t *) malloc(sizeof(pilha_tabelas_t));
     if (ret != NULL) {
-        ret->tabela_simbolos = NULL;
+        ret->tabela_simbolos = tabela_simbolos;
         ret->prox = NULL;
     } else {
         printf("Erro: %s não conseguiu alocar memória.\n", __FUNCTION__);
@@ -137,12 +137,22 @@ conteudo_tabela_simbolos_t *busca_entrada_tabela(tabela_simbolos_t *tabela, cons
 }
 
 
+void atribui_tipo (tabela_simbolos_t *tabela, char *tipo) {
+	if (tabela != NULL) {
+		for (int i = 0; i < tabela->numero_de_entradas; i++) {
+			if (strcmp(tabela->entradas[i]->tipo, "ATRIBUIR DEPOIS") == 0) {
+			      	tabela->entradas[i]->tipo = tipo;
+			}
+		}
+	}
+}
+
+
 void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *entrada) {
   if (tabela != NULL && entrada != NULL) {
         conteudo_tabela_simbolos_t *ret = busca_entrada_tabela(tabela, entrada->valor);
         if (ret != NULL) {
-            fprintf(stderr, "Identificador '%s' (%s) na linha %d já declarado na linha %d\n", entrada->valor, strcmp(entrada->natureza, "FUNCAO") == 0 ? "função" : "variável", entrada->linha, ret->linha);
-            exit(ERR_DECLARED); 
+            printa_erro(ERR_DECLARED, entrada->valor, entrada->linha, ret->linha);
         }
         tabela->numero_de_entradas++;
         tabela->entradas = realloc(tabela->entradas, tabela->numero_de_entradas * sizeof(conteudo_tabela_simbolos_t *));   
@@ -188,6 +198,70 @@ void printa_tabela_simbolos(tabela_simbolos_t *tabela)
 }
 
 
+char* infere_tipo(const char *tipo_op_1, const char *tipo_op_2){
+    // printf("tipo_op_1: %s, tipo_op_2: %s\n", tipo_op_1, tipo_op_2);
+    if (strcmp(tipo_op_1, "INT") == 0 && strcmp(tipo_op_2, "INT") == 0) {
+        return "INT";
+    } else if ((strcmp(tipo_op_1, "INT") == 0 && strcmp(tipo_op_2, "FLOAT") == 0) || (strcmp(tipo_op_1, "FLOAT") == 0 && strcmp(tipo_op_2, "INT") == 0)) {
+        return "FLOAT";
+    } else if (strcmp(tipo_op_1, "FLOAT") == 0 && strcmp(tipo_op_2, "FLOAT") == 0) {
+        return "FLOAT";
+    } else {
+        exit(1);
+    }
+}
+
+
+void printa_erro(int erro, const char *valor, int linha, int linha2) {
+    switch (erro) {
+        case ERR_UNDECLARED:
+            fprintf(stderr, "Erro semântico na linha %d: identificador %s não declarado\n", linha, valor);
+            exit(ERR_UNDECLARED);
+            break;
+        case ERR_DECLARED:
+            fprintf(stderr, "Erro semântico na linha %d: identificador %s já declarado anteriormente na linha %d\n", linha, valor, linha2);
+            exit(ERR_DECLARED);
+            break;
+        case ERR_VARIABLE:
+            fprintf(stderr, "Erro semântico na linha %d: identificador %s do tipo VARIAVEL sendo usado como %s\n", linha, valor, "FUNCAO");
+            exit(ERR_VARIABLE);
+            break;
+        case ERR_FUNCTION:
+            fprintf(stderr, "Erro semântico na linha %d: identificador %s do tipo FUNCAO sendo usado como %s\n", linha, valor, "VARIAVEL");
+            exit(ERR_FUNCTION);
+            break;
+        default:
+            fprintf(stderr, "Erro semântico na linha %d: erro desconhecido\n", linha);
+            exit(1);
+            break;
+    }
+}
+
+asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int minimo_filhos)
+{
+  if (tree != NULL) {
+    asd_tree_t *node = tree;
+    while (node->number_of_children > minimo_filhos) {
+      node = node->children[node->number_of_children - 1];
+    }
+    return node;
+  }
+  else return NULL;
+}
+
+
+asd_tree_t *cria_tipo(const char *tipo)
+{
+  asd_tree_t *ret = calloc(1, sizeof(asd_tree_t));
+  if (ret == NULL) {
+    fprintf(stderr, "Erro: %s não conseguiu alocar memória.\n", __FUNCTION__);
+    return NULL;
+  }
+  ret->tipo = strdup(tipo);
+  return ret;
+}
+
+
 // -------------------------------------------
 //            Funções etapa 3
 // -------------------------------------------
@@ -204,29 +278,6 @@ valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char*
 	valor_lexico->valor = strdup(valor);
 	return valor_lexico;
 }
-
-asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int minimo_filhos)
-{
-  if (tree != NULL) {
-    asd_tree_t *node = tree;
-    while (node->number_of_children > minimo_filhos) {
-      node = node->children[node->number_of_children - 1];
-    }
-    return node;
-  }
-  else return NULL;
-}
-
-asd_tree_t *asd_tipo(const char *tipo)
-{
-  asd_tree_t *ret = NULL;
-  ret = calloc(1, sizeof(asd_tree_t));
-  if (ret != NULL){
-    ret->tipo = strdup(tipo);
-  }
-  return ret;
-}
-
 
 
 asd_tree_t *asd_new(const char *label)

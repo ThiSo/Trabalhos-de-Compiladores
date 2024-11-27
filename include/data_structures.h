@@ -44,7 +44,7 @@ typedef struct pilha {
 /*
  * Função cria_pilha, cria uma pilha vazia.
  */
-pilha_tabelas_t* cria_pilha();
+pilha_tabelas_t* cria_pilha(tabela_simbolos_t *tabela_simbolos);
 
 /*
  * Função destroi_pilha, libera a memória alocada para a pilha.
@@ -94,7 +94,13 @@ conteudo_tabela_simbolos_t *busca_entrada_tabela(tabela_simbolos_t *tabela, cons
 
 
 /*
- * Função adiciona_simbolo, adiciona um símbolo à lista.
+ * Função atribui_tipo, percorre tabela buscando entradas sem tipo e atribui o tipo correspondente.
+ */
+void atribui_tipo (tabela_simbolos_t *tabela, char *tipo);
+
+
+/*
+ * Função adiciona_entrada, adiciona um símbolo à lista.
  */
 void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *entrada);
 
@@ -110,23 +116,31 @@ void destroi_tabela_simbolos(tabela_simbolos_t *tabela);
  */
 void printa_tabela_simbolos(tabela_simbolos_t *tabela);
 
+/*
+*  Função infere_tipo, infere o tipo de uma operação.
+*/
+char* infere_tipo(const char *tipo_op_1, const char *tipo_op_2);
 
-// ----------------------------------------------------------
-//                      Funções etapa 3 
-// ----------------------------------------------------------
+/*
+*  Função printa_erro, imprime o erro semntico.
+*/
+void printa_erro(int erro, const char *valor, int linha, int linha2);
 
 /*
  * Função corrige_ordem_filhos, necessária para corrigir erro na etapa 3.
  */
 asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int min_number_of_children);
 
+asd_tree_t *cria_tipo(const char *tipo);
+
+// ----------------------------------------------------------
+//                      Funções etapa 3 
+// ----------------------------------------------------------
+
 /*
  * Função cria_valor_lexico, cria um valor léxico.
  */
 valor_lexico_t* cria_valor_lexico(int linha, const char* tipo_token, const char* valor);
-
-
-asd_tree_t *asd_tipo(const char *tipo);
 
 /*
  * Função asd_new, cria um nó sem filhos com o label informado.
