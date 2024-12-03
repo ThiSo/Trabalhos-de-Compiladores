@@ -365,6 +365,15 @@ atribuicao: TK_IDENTIFICADOR '=' expressao
   else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
     printa_erro(ERR_FUNCTION, checa_id->valor, $1->linha, $1->linha);
   $$->tipo = checa_id->tipo;
+
+  // etapa 5:
+  //
+  // recuperar da entrada na tabela também o deslocamento, para uso logo abaixo
+  // illoc_t *instr_store = NULL, *instr_add = NULL;
+  // temp_t temp = gera_temp();
+  // instr_add = cria_instrucao("add", "rfp", checa_id.deslocamento, temp);
+  // instr_store = cria_instrucao2("store", $3.local, temp);
+  // $$.codigo = concatena_instrucoes($3.codigo, instr_add, instr_store);
 };                                     
 
 // checar aqui tambem se undeclared
@@ -517,6 +526,34 @@ prec2: prec2 '*' prec1
   asd_add_child($$, $3); 
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+
+  // etapa 5:
+  //
+  // temp_t temporario = gera_temp();
+  // illoc_t instr_mult = cria_instrucao("mult", $1.local, $3.local, temporario);
+  // $$.codigo = concatena3($1.codigo, $3.codigo, instr_mult);
+  // $$.local = temporario();
+  //
+  // exemplo transformando em funcao: 
+  // 
+  // typedef struct {
+  //    lista_instr_t *lista;
+  //    temp_t *temporario;
+  // } retorno_engsoft_t;
+  //
+  // retorno_engsoft_t gera_codigo_de_exp_bin(char* mneumonico, asd_tree_t f1, asd_tree_t f2) 
+  // {
+  //    temp_t temporario = gera_temp();
+  //    illoc_t instr = cria_instrucao(mneumonico, f1.local, f2.local, temporario);
+  //    retorno_engsoft_t retorno = {instr, temporario};
+  //
+  //    return retorno;
+  // }
+  //
+  // retorno_engsoft_t retorno; 
+  // retorno = gera_codigo_de_exp_bin("mult", $1, $3);
+  // $$.codigo = retorno.codigo;
+  // $$.local = retorno.temporario;
 };
 
 prec2: prec2 '/' prec1                  
@@ -535,11 +572,21 @@ prec2: prec2 '%' prec1
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+
+  // etapa 5:
+  //
+  // $$.local = NULL;
+  // $$.codigo = NULL; 
 };
 
 prec2: prec1                            
 { 
   $$ = $1; 
+
+  // etapa 5:
+  //
+  // $$.local = NULL;
+  // $$.codigo = NULL; 
 };
 
 prec1:'!' prec1                         
@@ -548,18 +595,31 @@ prec1:'!' prec1
   if($2 != NULL) 
     asd_add_child($$, $2);
   $$->tipo = $2->tipo;
+
+  // etapa 5:
+  //
+  // dar um jeito de tratar este caso, por exemplo com ifs (já que a gramática não tem booleanos)
 }
     | '-' prec1                         
 { 
   $$ = asd_new("-"); 
   if($2 != NULL) 
     asd_add_child($$, $2); 
-  $$->tipo = $2->tipo; 
+  $$->tipo = $2->tipo;
+
+  // etapa 5:
+  //
+  // necessário multiplicar o valor por (-1) aqui 
 };
 
 prec1: '(' expressao ')'                
 { 
   $$ = $2;
+
+  // etapa 5:
+  //
+  // $$.local = NULL;
+  // $$.codigo = NULL;
 };
 
 // checar aqui também se undeclared, da mesma forma que na atribuição
@@ -572,23 +632,43 @@ prec1:TK_IDENTIFICADOR
   else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
     printa_erro(ERR_FUNCTION, checa_id->valor, $1->linha, $1->linha);
   $$->tipo = checa_id->tipo; 
+
+  // etapa 5:
+  //
+  // $$.local  = gera_temp();
+  // $$.codigo = cria_instrucao("loadAI", "rfp", checa_id->deslocamento, $$.local);
 };
 
     | TK_LIT_INT                        
 { 
   $$ = asd_new($1->valor); 
   $$->tipo = strdup("INT"); 
+
+  // etapa 5:
+  //
+  // $$.local  = gera_temp();
+  // $$.codigo = cria_instrucao("loadI", "rfp", checa_id->deslocamento, $$.local);
 }
 
     | TK_LIT_FLOAT                      
 { 
   $$ = asd_new($1->valor); 
   $$->tipo = strdup("FLOAT"); 
+
+  // etapa 5:
+  //
+  // $$.local  = gera_temp();
+  // $$.codigo = cria_instrucao("loadI", "rfp", checa_id->deslocamento, $$.local);
 }
-                                          
+                                         
     | chamada_funcao                    
 { 
   $$ = $1; 
+
+  // etapa 5:
+  //
+  // $$.local = NULL;
+  // $$.codigo = NULL;
 };
                           
 %%
