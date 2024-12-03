@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/data_structures.h"
-#include "../include/erros.h"
+#include "data_structures.h"
+#include "erros.h"
 #define ARQUIVO_SAIDA "saida.dot"
 
 
@@ -80,15 +80,6 @@ conteudo_tabela_simbolos_t *busca_entrada_pilha(pilha_tabelas_t *pilha, const ch
   return NULL;
 }
 
-/*
- * Função printa_pilha, imprime todas as tabelas de símbolos na pilha.
- */
-void printa_pilha(pilha_tabelas_t *pilha) {
-    while (pilha != NULL) {
-        printa_tabela_simbolos(pilha->tabela_simbolos);
-        pilha = pilha->prox;
-    }
-}
 
 // -------------------------------------------
 //            Funções Tabela de símbolos
@@ -163,7 +154,6 @@ void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *ent
 }
 
 
-
 void destroi_tabela_simbolos(tabela_simbolos_t *tabela)
 {
   if (tabela == NULL) {
@@ -172,29 +162,6 @@ void destroi_tabela_simbolos(tabela_simbolos_t *tabela)
   }
   free(tabela->entradas);
   free(tabela);
-}
-
-
-void printa_tabela_simbolos(tabela_simbolos_t *tabela)
-{
-    if (tabela != NULL) {
-        for (int i = 0; i < tabela->numero_de_entradas; i++) {
-            char *tipo;
-            if (strcmp(tabela->entradas[i]->tipo, "int") == 0) {
-                tipo = "INT";
-            } else if (strcmp(tabela->entradas[i]->tipo, "float") == 0) {
-                tipo = "FLOAT";
-            } else if(strcmp(tabela->entradas[i]->tipo, "ATRIBUIR DEPOIS") == 0){
-                tipo = "ATRIBUIR DEPOIS";
-            } else {
-                tipo = "ERRO";
-            }
-            char *natureza = strcmp(tabela->entradas[i]->natureza, "FUNCAO") == 0 ? "FUNCAO" : "IDENTIFICADOR";
-            printf("Linha: %3d\tValor: %s\tTipo: %s\tNatureza: %s\n", tabela->entradas[i]->linha, tabela->entradas[i]->valor, tipo, natureza);
-        }
-    } else {
-        printf("Erro: %s recebeu parâmetro tabela = %p.\n", __FUNCTION__, tabela);
-    }
 }
 
 
@@ -237,14 +204,14 @@ void printa_erro(int erro, const char *valor, int linha, int linha2) {
     }
 }
 
-asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int minimo_filhos)
+asd_tree_t* corrige_ordem_filhos(asd_tree_t *arvore)
 {
-  if (tree != NULL) {
-    asd_tree_t *node = tree;
-    while (node->number_of_children > minimo_filhos) {
-      node = node->children[node->number_of_children - 1];
+  if (arvore != NULL) {
+    asd_tree_t *nodo_a_corrigir = arvore;
+    while (nodo_a_corrigir->number_of_children > 2) {
+      nodo_a_corrigir = nodo_a_corrigir->children[nodo_a_corrigir->number_of_children - 1];
     }
-    return node;
+    return nodo_a_corrigir;
   }
   else return NULL;
 }

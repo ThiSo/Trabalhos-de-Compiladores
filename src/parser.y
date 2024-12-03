@@ -1,7 +1,7 @@
 %{
     #include <stdio.h>
     #include <string.h>
-    #include "../include/data_structures.h"
+    #include "data_structures.h" // Necessário incluir aqui por conta da pilha global na linha 8
     int yylex(void);
     extern int get_line_number();
     extern void *arvore;
@@ -10,9 +10,9 @@
 %}
 
 %code requires {
-    #include "../include/data_structures.h"
-    #include "../include/aux.h"
-    #include "../include/erros.h"
+    #include "aux.h"
+    #include "erros.h"
+    #include "data_structures.h"
 }
 
 %union {
@@ -79,15 +79,21 @@
 
 inicializacao: abre_escopo_global programa fecha_escopo_global         
 
-abre_escopo_global:                                                    { tabela_simbolos_t *tabela_global = cria_tabela_simbolos();
-                                                                         // Pilha deve ser inicializada com a tabela global (atualizaçao na spec)
-                                                                         pilha_tabelas = cria_pilha(tabela_global); };
+abre_escopo_global:                                                    
+{ tabela_simbolos_t *tabela_global = cria_tabela_simbolos();
+  // Pilha deve ser inicializada com a tabela global (atualizaçao na spec)
+  pilha_tabelas = cria_pilha(tabela_global); 
+};
 
-abre_escopo_func:                                                      { tabela_simbolos_t *tabela_func = cria_tabela_simbolos();
-                                                                         empilhar(&pilha_tabelas, tabela_func); };
+abre_escopo_func:                                                      
+{ tabela_simbolos_t *tabela_func = cria_tabela_simbolos();
+  empilhar(&pilha_tabelas, tabela_func); 
+};
 
-abre_escopo_aninhado:                                                  { tabela_simbolos_t *tabela_aninhada = cria_tabela_simbolos();
-                                                                         empilhar(&pilha_tabelas, tabela_aninhada); };
+abre_escopo_aninhado:                                                  
+{ tabela_simbolos_t *tabela_aninhada = cria_tabela_simbolos();
+  empilhar(&pilha_tabelas, tabela_aninhada); 
+};
 
 fecha_escopo_global:                                                   { destroi_pilha(pilha_tabelas); };
 
@@ -98,10 +104,10 @@ fecha_escopo_aninhado:                                                 { desempi
 programa: lista_de_funcoes 	                                           { $$ = $1; arvore = $$; }
     |                                                                  { $$ = NULL; arvore = $$; };
                              
-lista_de_funcoes: funcao fecha_escopo_func lista_de_funcoes 	       { $$ = $1; if($3 != NULL) asd_add_child($$, $3); }          
-        | funcao fecha_escopo_func		                               { $$ = $1; };         
+lista_de_funcoes: funcao fecha_escopo_func lista_de_funcoes 	         { $$ = $1; if($3 != NULL) asd_add_child($$, $3); }          
+        | funcao fecha_escopo_func		                                 { $$ = $1; };         
 
-funcao: cabecalho corpo				                                   { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
+funcao: cabecalho corpo				                                         { $$ = $1; if($2 != NULL) asd_add_child($$, $2); };	    
 
 // -----------------------------------------------------------------------------------
 // Escopo da funcao 
@@ -110,12 +116,12 @@ funcao: cabecalho corpo				                                   { $$ = $1; if($2 !
 
 // { /* segundo o professor, colocar na tabela que está EM BAIXO (global) $1 e $6 */ };
 cabecalho: TK_IDENTIFICADOR '=' abre_escopo_func lista_parametros '>' tipo_variavel 	{ $$ = asd_new($1->valor);
-                                                                                          conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "FUNCAO", $6->tipo, $1->valor);
-                                                                                          adiciona_entrada(pilha_tabelas->prox->tabela_simbolos, entrada);};    
+                                                                                        conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "FUNCAO", $6->tipo, $1->valor);
+                                                                                        adiciona_entrada(pilha_tabelas->prox->tabela_simbolos, entrada);};    
 
 
 lista_parametros: parametro TK_OC_OR lista_parametros               { $$ = NULL; }
-        | parametro 			                                    { $$ = NULL; }
+        | parametro 			                                          { $$ = NULL; }
         |                                                           { $$ = NULL; };            
 
 
@@ -125,8 +131,8 @@ parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   { $$ = NULL;
                                                                       adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada);};
 
 // necessária criação de um nodo com tipo aqui, pois os nodos criados com asd_new sempre vem com tipo = NULL, e na etapa 3 essa regra era apenas $$ = NULL
-tipo_variavel: TK_PR_INT		                         { $$ = cria_tipo("INT"); } 
-             | TK_PR_FLOAT 		                         { $$ = cria_tipo("FLOAT"); };   
+tipo_variavel: TK_PR_INT		                             { $$ = cria_tipo("INT"); } 
+             | TK_PR_FLOAT 		                           { $$ = cria_tipo("FLOAT"); };   
 
 corpo: bloco_comandos_func                               { $$ = $1; };    
 
@@ -141,46 +147,44 @@ bloco_comandos: '{' abre_escopo_aninhado lista_comandos fecha_escopo_aninhado '}
 // Escopo aninhado
 // -----------------------------------------------------------------------------------
 
-lista_comandos: comando 		                                         { $$ = $1; }       // Tratamento para as variaveis não inicializadas
+lista_comandos: comando 		                                           { $$ = $1; }       // Tratamento para as variaveis não inicializadas
               | comando lista_comandos	            	                 { $$ = $1; if(($$ != NULL) && ($2 != NULL)) asd_add_child($$, $2); else if ($2 != NULL ) $$ = $2; } 
-              | declaracao_variavel ';' lista_comandos		             { $$ = $1; if ($$ != NULL) { if($3 != NULL) asd_add_child(corrige_ordem_filhos($$, 2), $3); } else $$ = $3; }
+              | declaracao_variavel ';' lista_comandos		             { $$ = $1; if ($$ != NULL) { if($3 != NULL) asd_add_child(corrige_ordem_filhos($$), $3); } else $$ = $3; }
               | declaracao_variavel ';' 	                             { $$ = $1; };
 
-comando: bloco_comandos ';' 		                                     { $$ = $1; }
-       | retorno ';' 			                                         { $$ = $1; }
-       | atribuicao ';' 		                                         { $$ = $1; }
-       | chamada_funcao ';' 		                                     { $$ = $1; }
+comando: bloco_comandos ';' 		                                       { $$ = $1; }
+       | retorno ';' 			                                             { $$ = $1; }
+       | atribuicao ';' 		                                           { $$ = $1; }
+       | chamada_funcao ';' 		                                       { $$ = $1; }
        | controle_fluxo ';'		                                         { $$ = $1; };
 
 // Atribuir tipos deixados na tabela como "atribuir depois" aqui
 declaracao_variavel: tipo_variavel lista_variaveis	                     { $$ = $2;
-                                                                           atribui_tipo(pilha_tabelas->tabela_simbolos, $1->tipo);
-                                                                           // printa_tabela_simbolos(pilha_tabelas->tabela_simbolos); 
-                                                                           // printf("Quantidade de entradas na tabela atual: %d\n", pilha_tabelas->tabela_simbolos->numero_de_entradas); 
-                                                                         };   
+                                                                           atribui_tipo(pilha_tabelas->tabela_simbolos, $1->tipo); };   
 
                                                                          // variaveis não inicializadas não entram na AST (mesmo comando)
-lista_variaveis: variavel ',' lista_variaveis 		                     { if($1 == NULL) $$ = $3; else { $$ = $1; if ($3 != NULL) asd_add_child($$, $3); }};       
-               | variavel				                                 { $$ = $1; };     
+lista_variaveis: variavel ',' lista_variaveis 		                       { if($1 == NULL) $$ = $3; else { $$ = $1; if ($3 != NULL) asd_add_child($$, $3); }};       
+               | variavel				                                         { $$ = $1; };     
 
                                                                          // variaveis não inicializadas não entram na AST (comandos separados)
-variavel: TK_IDENTIFICADOR 				                                 { $$ = NULL;
+variavel: TK_IDENTIFICADOR 				                                       { $$ = NULL;
                                                                            conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
                                                                            adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); }
 
-        | TK_IDENTIFICADOR TK_OC_LE literal		                         { $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); 
+        | TK_IDENTIFICADOR TK_OC_LE literal		                           { $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); 
+                                                                           // Talvez usar $3->tipo em vez de ATRIBUIR_DEPOIS aqui? - perguntar pro professor
                                                                            conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
                                                                            adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); };
 
-literal: TK_LIT_INT   					                                 { $$ = asd_new($1->valor);
+literal: TK_LIT_INT   					                                         { $$ = asd_new($1->valor);
                                                                            $$->tipo = strdup("INT"); }  
-       | TK_LIT_FLOAT 					                                 { $$ = asd_new($1->valor);
+       | TK_LIT_FLOAT 					                                         { $$ = asd_new($1->valor);
                                                                            $$->tipo = strdup("FLOAT"); };                                         
 
-retorno: TK_PR_RETURN expressao				                             { $$ = asd_new("return"), asd_add_child($$, $2); };                                                                    
+retorno: TK_PR_RETURN expressao				                                   { $$ = asd_new("return"), asd_add_child($$, $2); };                                                                    
                                                      
-controle_fluxo: ifs                     		                         { $$ = $1; }
-              | whiles                  		                         { $$ = $1; };                                                                
+controle_fluxo: ifs                     		                             { $$ = $1; }
+              | whiles                  		                             { $$ = $1; };                                                                
 
 ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           { $$ = asd_new("if"); asd_add_child($$,$3); if($5 != NULL){ asd_add_child($$, $5); }}
    | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { $$ = asd_new("if"); asd_add_child($$,$3); if($5 != NULL){ asd_add_child($$, $5); } if($7 != NULL){ asd_add_child($$, $7); }};                        

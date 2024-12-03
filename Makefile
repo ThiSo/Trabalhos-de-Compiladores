@@ -1,32 +1,35 @@
-SRC_DIR = src
-OBJ_DIR = obj
-INC_DIR = include
+IDIR = include
+CC = gcc
+CFLAGS = -I$(IDIR)
 
-SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
-OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+ODIR = obj
+SDIR = src
 
-DEPS = $(OBJ_DIR)/main.o $(OBJ_DIR)/parser.tab.o $(OBJ_DIR)/lex.yy.o $(OBJ_DIR)/data_structures.o $(OBJ_DIR)/aux.o
+LIBS = -lfl
 
-all: etapa4
+_DEPS = parser.tab.h
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-etapa4: $(DEPS)
-	gcc -o etapa4 $(DEPS) -lfl
+_OBJ = lex.yy.o parser.tab.o main.o data_structures.o aux.o
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(SRC_DIR)/parser.tab.h
-	gcc -c $< -o $@ -I$(INC_DIR)
+$(ODIR)/%.o: $(SDIR)/%.c $(DEPS) | $(ODIR)
+	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+etapa4: $(OBJ)
+	$(CC) -g -o $@ $^ $(LIBS)
 
-# Gera o arquivo parser.tab.c e parser.tab.h 
-$(SRC_DIR)/parser.tab.c $(SRC_DIR)/parser.tab.h: $(SRC_DIR)/parser.y
-	bison -d $(SRC_DIR)/parser.y -o $(SRC_DIR)/parser.tab.c
+$(ODIR):
+	mkdir -p $(ODIR)
 
-# Gera o arquivo lex.yy.c 
-$(SRC_DIR)/lex.yy.c: $(SRC_DIR)/scanner.l
-	flex -o $(SRC_DIR)/lex.yy.c $(SRC_DIR)/scanner.l
+$(SDIR)/parser.tab.c $(IDIR)/parser.tab.h: $(SDIR)/parser.y
+	bison -d $(SDIR)/parser.y -o $(SDIR)/parser.tab.c
+	mv $(SDIR)/parser.tab.h $(IDIR)/parser.tab.h
+
+$(SDIR)/lex.yy.c: $(SDIR)/scanner.l
+	flex -o $(SDIR)/lex.yy.c $(SDIR)/scanner.l
+
+.PHONY: clean
 
 clean:
-	rm -rf $(OBJ_DIR) $(SRC_DIR)/parser.tab.c $(SRC_DIR)/parser.tab.h $(SRC_DIR)/lex.yy.c etapa4 saida.dot graph.png
-
-.PHONY: all clean
+	rm -rf $(ODIR) $(SDIR)/parser.tab.c $(IDIR)/parser.tab.h $(SDIR)/lex.yy.c etapa4

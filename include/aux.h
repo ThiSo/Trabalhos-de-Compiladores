@@ -1,7 +1,7 @@
 #ifndef AUX_H
 #define AUX_H
 
-#include "../include/data_structures.h"
+#include "data_structures.h"
 
 void printa_arvore(asd_tree_t *arvore);
 void printa_labels(asd_tree_t *arvore);

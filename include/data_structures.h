@@ -61,11 +61,6 @@ void empilhar(pilha_tabelas_t **pilha, tabela_simbolos_t *tabela_simbolos);
  */
 void desempilhar(pilha_tabelas_t **pilha);
 
-/*
- * Função printa_pilha, imprime todas as tabelas de símbolos na pilha.
- */
-void printa_pilha(pilha_tabelas_t *pilha);
-
 
 /*
  * Função buscar_entrada, busca uma entrada na pilha de tabelas de símbolos.
@@ -112,11 +107,6 @@ void destroi_tabela_simbolos(tabela_simbolos_t *tabela);
 
 
 /*
- * Função printa_tabela_simbolos, imprime a lista de símbolos.
- */
-void printa_tabela_simbolos(tabela_simbolos_t *tabela);
-
-/*
 *  Função infere_tipo, infere o tipo de uma operação.
 */
 char* infere_tipo(const char *tipo_op_1, const char *tipo_op_2);
@@ -129,7 +119,7 @@ void printa_erro(int erro, const char *valor, int linha, int linha2);
 /*
  * Função corrige_ordem_filhos, necessária para corrigir erro na etapa 3.
  */
-asd_tree_t* corrige_ordem_filhos(asd_tree_t *tree, int min_number_of_children);
+asd_tree_t* corrige_ordem_filhos(asd_tree_t *arvore);
 
 asd_tree_t *cria_tipo(const char *tipo);
 

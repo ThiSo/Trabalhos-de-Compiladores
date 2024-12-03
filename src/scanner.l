@@ -2,7 +2,7 @@
 %{
 
 	#include "parser.tab.h"
-	#include "../include/aux.h"
+	#include "aux.h"
 	extern int yylineno;
 	extern void *arvore;
 	extern int get_line_number();
