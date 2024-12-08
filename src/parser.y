@@ -333,7 +333,9 @@ atribuicao: TK_IDENTIFICADOR '=' expressao {
   // illoc_t *instr_store = NULL, *instr_add = NULL;
    char* temp = gera_temp();
   //instr_add = cria_instrucao("add", "rfp", checa_id.deslocamento, temp);
-   char* instr_store = cria_instrucao("store", $3->local, NULL, temp);
+   char buffer[20]; 
+   sprintf(buffer, "%d", checa_id->deslocamento);
+   char* instr_store = cria_instrucao("storeAI", $3->local, "rfp", buffer);
    $$->codigo = concatena2($3->codigo, instr_store);
    printf("%s\n", $$->codigo);
 };                                     
@@ -370,6 +372,11 @@ expressao: expressao TK_OC_OR prec6 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_or = cria_instrucao("or", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_or);
+  $$->local = temporario;
 };
 
 expressao: prec6 { 
@@ -382,6 +389,11 @@ prec6: prec6 TK_OC_AND prec5 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_and = cria_instrucao("and", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_and);
+  $$->local = temporario;
 }; 
 
 prec6: prec5 { 
@@ -394,6 +406,11 @@ prec5: prec5 TK_OC_EQ prec4 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_EQ = cria_instrucao("cmp_EQ", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_EQ);
+  $$->local = temporario;
 };
 
 prec5: prec5 TK_OC_NE prec4 { 
@@ -402,6 +419,11 @@ prec5: prec5 TK_OC_NE prec4 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_NE = cria_instrucao("cmp_NE", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_NE);
+  $$->local = temporario;
 };
 
 prec5: prec4 { 
@@ -414,6 +436,11 @@ prec4: prec4 '<' prec3 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo;
+  
+  char *temporario = gera_temp();
+  char* instr_LT = cria_instrucao("cmp_LT", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_LT);
+  $$->local = temporario;
 };
 
 prec4: prec4 '>' prec3 { 
@@ -422,6 +449,11 @@ prec4: prec4 '>' prec3 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_GT = cria_instrucao("cmp_GT", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_GT);
+  $$->local = temporario;
 };
 
 prec4: prec4 TK_OC_LE prec3 { 
@@ -430,6 +462,11 @@ prec4: prec4 TK_OC_LE prec3 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_LE = cria_instrucao("cmp_LE", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_LE);
+  $$->local = temporario;
 };
 
 prec4: prec4 TK_OC_GE prec3 { 
@@ -438,6 +475,11 @@ prec4: prec4 TK_OC_GE prec3 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_GE = cria_instrucao("cmp_GE", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_GE);
+  $$->local = temporario;
 };
 
 prec4: prec3 { 
@@ -518,6 +560,11 @@ prec2: prec2 '/' prec1 {
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_div = cria_instrucao("div", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_div);
+  $$->local = temporario;
 };
 
 prec2: prec2 '%' prec1 { 

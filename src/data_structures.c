@@ -341,41 +341,34 @@ asd_tree_t *cria_tipo(const char *tipo)
 // -------------------------------------------
 
 char* gera_temp() {
-    // Buffer temporário para o número convertido
     char buffer[20]; 
-    sprintf(buffer, "%d", contador_global); // Converte o número para string
+    sprintf(buffer, "%d", contador_global);
 
-    // Calcula o tamanho total da string resultante
     size_t tamanho = strlen(buffer) + strlen("t") + 1;
 
-    // Aloca memória para a nova string concatenada
     char* resultado = malloc(tamanho);
     if (resultado == NULL) {
         fprintf(stderr, "Erro de alocação de memória.\n");
         exit(EXIT_FAILURE);
     }
 
-    // Concatena as strings
-    strcpy(resultado, "t"); // Copia "t"
-    strcat(resultado, buffer);    // Concatena o contador global
+    strcpy(resultado, "t");
+    strcat(resultado, buffer);
     
     contador_global++;
 
-    return resultado; // Retorna a string concatenada
+    return resultado;
 }
 
 char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* parametro3) {
-	// Inicializa a variável que vai guardar o tamanho total da instrução
 	size_t tamanho = strlen(instrucao);
 	    
-	// Adiciona os tamanhos dos parâmetros, mas apenas se não forem NULL
 	if (parametro1 != NULL) tamanho += strlen(parametro1);
 	if (parametro2 != NULL) tamanho += strlen(parametro2);
 	if (parametro3 != NULL) tamanho += strlen(parametro3);
 
-	// Inclui espaço extra para separadores e o terminador nulo
-	tamanho += 5;  // para separadores como "  ", ", ", " => ", etc.
-	tamanho += 1;  // para o '\0' de terminação
+	tamanho += 5; 
+	tamanho += 1;  
 	char* resultado = malloc(tamanho);
 	
 	if (resultado == NULL) {
@@ -402,16 +395,27 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
     	}
     	
     	// adicionar condicionais para gerar os outros formatos de instruções
-    	
     	else {
-    		strcpy(resultado, instrucao);
-    		strcat(resultado, "  ");
-    		strcat(resultado, parametro1);
-    		strcat(resultado, ", ");
-    		strcat(resultado, parametro2);
-    		strcat(resultado, " => ");
-    		strcat(resultado, parametro3);
-    		strcat(resultado, "\n");
+    		if(strcmp(instrucao, "storeAI") == 0 || strcmp(instrucao, "storeA0") == 0 || strcmp(instrucao, "cstoreAI") == 0 || strcmp(instrucao, "cstoreA0") == 0) {
+    			strcpy(resultado, instrucao);
+	    		strcat(resultado, "  ");
+	    		strcat(resultado, parametro1);
+	    		strcat(resultado, " => ");
+	    		strcat(resultado, parametro2);
+	    		strcat(resultado, ", ");
+	    		strcat(resultado, parametro3);
+	    		strcat(resultado, "\n");
+    		}
+    		else {
+    			strcpy(resultado, instrucao);
+	    		strcat(resultado, "  ");
+	    		strcat(resultado, parametro1);
+	    		strcat(resultado, ", ");
+	    		strcat(resultado, parametro2);
+	    		strcat(resultado, " => ");
+	    		strcat(resultado, parametro3);
+	    		strcat(resultado, "\n");
+    		}
     	}
     	
     	return resultado;
