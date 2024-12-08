@@ -16,7 +16,7 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS) | $(ODIR)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-etapa4: $(OBJ)
+etapa5: $(OBJ)
 	$(CC) -g -o $@ $^ $(LIBS)
 
 $(ODIR):
@@ -32,4 +32,4 @@ $(SDIR)/lex.yy.c: $(SDIR)/scanner.l
 .PHONY: clean
 
 clean:
-	rm -rf $(ODIR) $(SDIR)/parser.tab.c $(IDIR)/parser.tab.h $(SDIR)/lex.yy.c etapa4
+	rm -rf $(ODIR) $(SDIR)/parser.tab.c $(IDIR)/parser.tab.h $(SDIR)/lex.yy.c etapa5

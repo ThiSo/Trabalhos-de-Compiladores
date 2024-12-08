@@ -182,4 +182,14 @@ void asd_print(asd_tree_t *tree);
  */
 void asd_print_graphviz (asd_tree_t *tree);
 
+asd_tree_t* cria_nodo_expressao(char *expressao, asd_tree_t *filho_1, asd_tree_t *filho_2);
+
+asd_tree_t* cria_nodo_expressao_unaria(char *expressao, asd_tree_t *filho_1);
+
+asd_tree_t* processa_chamada_funcao(valor_lexico_t *identificador, asd_tree_t *filho_2, pilha_tabelas_t *pilha_tabelas);
+
+asd_tree_t* processa_atribuicao(valor_lexico_t *identificador, asd_tree_t *filho_2, pilha_tabelas_t *pilha_tabelas);
+
+asd_tree_t* processa_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas);
+
 #endif // DATA_STRUCTURES_H

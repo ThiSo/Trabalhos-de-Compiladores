@@ -264,7 +264,6 @@ variavel: TK_IDENTIFICADOR {
 }
         | TK_IDENTIFICADOR TK_OC_LE literal {
   $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); 
-  // Talvez usar $3->tipo em vez de ATRIBUIR_DEPOIS aqui? - perguntar pro professor
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
   adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); 
 };
@@ -313,19 +312,8 @@ whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos {
 
 // --------------------------------------------------------------
 
-// checar aqui se identificador ja foi criado procurando na tabela no topo da pilha e nas abaixo
-// checar também se identificador está sendo usado corretamente (erro function -> se função é usada como variável)
-// comando de atribuição deve ter inferência de tipo e "passar pra cima" o seu tipo com base na tabela  
 atribuicao: TK_IDENTIFICADOR '=' expressao { 
-  $$ = asd_new("="); 
-  asd_add_child($$, asd_new($1->valor)); 
-  asd_add_child($$, $3); 
-  conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, $1->valor);
-  if (checa_id == NULL)
-    printa_erro(ERR_UNDECLARED, $1->valor, $1->linha, $1->linha);
-  else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
-    printa_erro(ERR_FUNCTION, checa_id->valor, $1->linha, $1->linha);
-  $$->tipo = checa_id->tipo;
+  $$ = processa_atribuicao($1, $3, pilha_tabelas);
 
   // etapa 5:
   //
@@ -340,19 +328,11 @@ atribuicao: TK_IDENTIFICADOR '=' expressao {
    printf("%s\n", $$->codigo);
 };                                     
 
-// checar aqui tambem se undeclared
-// além disso, checar se está sendo usado corretamente (erro variable -> variavel utilizada como função)
+
 chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')' { 
-  char buffer[256]; 
-  snprintf(buffer, sizeof(buffer), "call %s", $1->valor); 
-  $$ = asd_new(buffer); 
-  asd_add_child($$, $3); 
-  conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, $1->valor);
-  if (checa_id == NULL)
-    printa_erro(ERR_UNDECLARED, $1->valor, $1->linha, $1->linha);
-  else if(strcmp(checa_id->natureza, "IDENTIFICADOR") == 0)
-    printa_erro(ERR_VARIABLE, checa_id->valor, $1->linha, $1->linha);
+  $$ = processa_chamada_funcao($1, $3, pilha_tabelas);
 };           
+
 
 lista_argumentos: expressao { 
   $$ = $1; 
@@ -362,16 +342,9 @@ lista_argumentos: expressao {
   asd_add_child($$, $3); 
 };
 
-// Adicionar inferência de tipo aqui
-// (int, int) -> int
-// (float, float) -> float
-// (float, int) -> float
+
 expressao: expressao TK_OC_OR prec6 { 
-  $$ = asd_new("|"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("|", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_or = cria_instrucao("or", $1->local, $3->local, temporario);
@@ -379,16 +352,14 @@ expressao: expressao TK_OC_OR prec6 {
   $$->local = temporario;
 };
 
+
 expressao: prec6 { 
   $$ = $1; 
 };
 
+
 prec6: prec6 TK_OC_AND prec5 { 
-  $$ = asd_new("&"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("&", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_and = cria_instrucao("and", $1->local, $3->local, temporario);
@@ -396,16 +367,14 @@ prec6: prec6 TK_OC_AND prec5 {
   $$->local = temporario;
 }; 
 
+
 prec6: prec5 { 
   $$ = $1; 
 };
 
+
 prec5: prec5 TK_OC_EQ prec4 { 
-  $$ = asd_new("=="); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("==", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_EQ = cria_instrucao("cmp_EQ", $1->local, $3->local, temporario);
@@ -413,12 +382,9 @@ prec5: prec5 TK_OC_EQ prec4 {
   $$->local = temporario;
 };
 
+
 prec5: prec5 TK_OC_NE prec4 { 
-  $$ = asd_new("!="); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("!=", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_NE = cria_instrucao("cmp_NE", $1->local, $3->local, temporario);
@@ -426,16 +392,14 @@ prec5: prec5 TK_OC_NE prec4 {
   $$->local = temporario;
 };
 
+
 prec5: prec4 { 
   $$ = $1; 
 };
 
+
 prec4: prec4 '<' prec3 { 
-  $$ = asd_new("<"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo;
+  $$ = cria_nodo_expressao("<", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_LT = cria_instrucao("cmp_LT", $1->local, $3->local, temporario);
@@ -443,12 +407,9 @@ prec4: prec4 '<' prec3 {
   $$->local = temporario;
 };
 
+
 prec4: prec4 '>' prec3 { 
-  $$ = asd_new(">"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao(">", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_GT = cria_instrucao("cmp_GT", $1->local, $3->local, temporario);
@@ -456,12 +417,9 @@ prec4: prec4 '>' prec3 {
   $$->local = temporario;
 };
 
+
 prec4: prec4 TK_OC_LE prec3 { 
-  $$ = asd_new("<="); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("<=", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_LE = cria_instrucao("cmp_LE", $1->local, $3->local, temporario);
@@ -469,12 +427,9 @@ prec4: prec4 TK_OC_LE prec3 {
   $$->local = temporario;
 };
 
+
 prec4: prec4 TK_OC_GE prec3 { 
-  $$ = asd_new(">="); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao(">=", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_GE = cria_instrucao("cmp_GE", $1->local, $3->local, temporario);
@@ -482,16 +437,14 @@ prec4: prec4 TK_OC_GE prec3 {
   $$->local = temporario;
 };
 
+
 prec4: prec3 { 
   $$ = $1; 
 };
 
+
 prec3: prec3 '+' prec2 { 
-  $$ = asd_new("+"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("+", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_add = cria_instrucao("add", $1->local, $3->local, temporario);
@@ -500,12 +453,9 @@ prec3: prec3 '+' prec2 {
   //printf("%s\n", $$->codigo);
 };
 
+
 prec3: prec3 '-' prec2 { 
-  $$ = asd_new("-"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo;
+  $$ = cria_nodo_expressao("-", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_sub = cria_instrucao("sub", $1->local, $3->local, temporario);
@@ -514,16 +464,14 @@ prec3: prec3 '-' prec2 {
   //printf("%s\n", $$->codigo); 
 };
 
+
 prec3: prec2 { 
   $$ = $1; 
 };  
 
+
 prec2: prec2 '*' prec1 { 
-  $$ = asd_new("*"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3); 
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("*", $1, $3);
 
   // etapa 5:
   //
@@ -531,6 +479,7 @@ prec2: prec2 '*' prec1 {
   char* instr_mult = cria_instrucao("mult", $1->local, $3->local, temporario);
   $$->codigo = concatena3($1->codigo, $3->codigo, instr_mult);
   $$->local = temporario;
+
   //
   // exemplo transformando em funcao: 
   // 
@@ -554,12 +503,9 @@ prec2: prec2 '*' prec1 {
   // $$.local = retorno.temporario;
 };
 
+
 prec2: prec2 '/' prec1 { 
-  $$ = asd_new("/"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("/", $1, $3);
   
   char *temporario = gera_temp();
   char* instr_div = cria_instrucao("div", $1->local, $3->local, temporario);
@@ -567,18 +513,16 @@ prec2: prec2 '/' prec1 {
   $$->local = temporario;
 };
 
+
 prec2: prec2 '%' prec1 { 
-  $$ = asd_new("%"); 
-  asd_add_child($$, $1); 
-  asd_add_child($$, $3);
-  char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$ = cria_nodo_expressao("%", $1, $3);
 
   // etapa 5:
   //
   // $$->local = NULL;
   // $$.codigo = NULL; 
 };
+
 
 prec2: prec1 { 
   $$ = $1; 
@@ -589,45 +533,32 @@ prec2: prec1 {
   // $$.codigo = NULL; 
 };
 
+
 prec1:'!' prec1 { 
-  $$ = asd_new("!"); 
-  if($2 != NULL) 
-    asd_add_child($$, $2);
-  $$->tipo = $2->tipo;
+  $$ = cria_nodo_expressao_unaria("!", $2);
 
   // etapa 5:
   //
   // dar um jeito de tratar este caso, por exemplo com ifs (já que a gramática não tem booleanos)
 }
     | '-' prec1 { 
-  $$ = asd_new("-"); 
-  if($2 != NULL) 
-    asd_add_child($$, $2); 
-  $$->tipo = $2->tipo;
+  $$ = cria_nodo_expressao_unaria("-", $2);
 
   // etapa 5:
   //
   // necessário multiplicar o valor por (-1) aqui 
 };
 
+
 prec1: '(' expressao ')' { 
   $$ = $2;
-
-  // etapa 5:
-  //
   $$->local = NULL;
   $$->codigo = NULL;
 };
 
-// checar aqui também se undeclared, da mesma forma que na atribuição
+
 prec1:TK_IDENTIFICADOR { 
-  $$ = asd_new($1->valor); 
-  conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, $1->valor);
-  if (checa_id == NULL)
-    printa_erro(ERR_UNDECLARED, $1->valor, $1->linha, $1->linha);
-  else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
-    printa_erro(ERR_FUNCTION, checa_id->valor, $1->linha, $1->linha);
-  $$->tipo = checa_id->tipo; 
+  $$ = processa_expressao($1, pilha_tabelas);
 
   // etapa 5:
   //
@@ -650,18 +581,10 @@ prec1:TK_IDENTIFICADOR {
     | TK_LIT_FLOAT { 
   $$ = asd_new($1->valor); 
   $$->tipo = strdup("FLOAT"); 
-
-  // etapa 5:
-  //
-  $$->local  = gera_temp();
-  // $$->codigo = cria_instrucao("loadI", "rfp", buffer, $$->local);
 }
                                          
     | chamada_funcao { 
   $$ = $1; 
-
-  // etapa 5:
-  //
   $$->local = NULL;
   $$->codigo = NULL;
 };

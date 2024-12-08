@@ -8,6 +8,141 @@ int contador_global = 0;
 
 
 // -------------------------------------------
+//            Funções etapa 5
+// -------------------------------------------
+
+char* gera_temp() {
+    char buffer[20]; 
+    sprintf(buffer, "%d", contador_global);
+
+    size_t tamanho = strlen(buffer) + strlen("t") + 1;
+
+    char* resultado = malloc(tamanho);
+    if (resultado == NULL) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(resultado, "t");
+    strcat(resultado, buffer);
+    
+    contador_global++;
+
+    return resultado;
+}
+
+char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* parametro3) {
+	size_t tamanho = strlen(instrucao);
+	    
+	if (parametro1 != NULL) tamanho += strlen(parametro1);
+	if (parametro2 != NULL) tamanho += strlen(parametro2);
+	if (parametro3 != NULL) tamanho += strlen(parametro3);
+
+	tamanho += 5; 
+	tamanho += 1;  
+	char* resultado = malloc(tamanho);
+	
+	if (resultado == NULL) {
+		fprintf(stderr, "Erro de alocação de memória.\n");
+		exit(EXIT_FAILURE);
+    	}
+    	
+    	if(parametro2 == NULL) {
+    		strcpy(resultado, instrucao);
+    		strcat(resultado, "  ");
+    		strcat(resultado, parametro1);
+    		strcat(resultado, " => ");
+    		strcat(resultado, parametro3);
+    		strcat(resultado, "\n");
+    	}
+    	
+    	else if(parametro1 == NULL) {
+    		strcpy(resultado, instrucao);
+    		strcat(resultado, "  ");
+    		strcat(resultado, parametro2);
+    		strcat(resultado, " => ");
+    		strcat(resultado, parametro3);
+    		strcat(resultado, "\n");
+    	}
+    	
+    	// adicionar condicionais para gerar os outros formatos de instruções
+    	else {
+    		if(strcmp(instrucao, "storeAI") == 0 || strcmp(instrucao, "storeA0") == 0 || strcmp(instrucao, "cstoreAI") == 0 || strcmp(instrucao, "cstoreA0") == 0) {
+    			strcpy(resultado, instrucao);
+	    		strcat(resultado, "  ");
+	    		strcat(resultado, parametro1);
+	    		strcat(resultado, " => ");
+	    		strcat(resultado, parametro2);
+	    		strcat(resultado, ", ");
+	    		strcat(resultado, parametro3);
+	    		strcat(resultado, "\n");
+    		}
+    		else {
+    			strcpy(resultado, instrucao);
+	    		strcat(resultado, "  ");
+	    		strcat(resultado, parametro1);
+	    		strcat(resultado, ", ");
+	    		strcat(resultado, parametro2);
+	    		strcat(resultado, " => ");
+	    		strcat(resultado, parametro3);
+	    		strcat(resultado, "\n");
+    		}
+    	}
+    	
+    	return resultado;
+}
+
+char* concatena3(char* parametro1, char* parametro2, char* instr) {
+    // Verificar se algum parâmetro é NULL
+    if (parametro1 == NULL || parametro2 == NULL || instr == NULL) {
+        fprintf(stderr, "Erro: parâmetros inválidos.\n");
+        return NULL;
+    }
+
+    // Calcular o tamanho total necessário para armazenar as três strings mais o '\0'
+    size_t tamanho = strlen(parametro1) + strlen(parametro2) + strlen(instr) + 5;
+
+    // Alocar memória para o resultado
+    char* resultado = malloc(tamanho);
+    if (resultado == NULL) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Copiar as strings para o resultado
+    strcpy(resultado, parametro1);
+    strcat(resultado, parametro2);
+    strcat(resultado, instr);
+
+    return resultado;
+}
+
+char* concatena2(char* parametro1, char* instr) {
+    // Verificar se algum parâmetro é NULL
+    if (parametro1 == NULL || instr == NULL) {
+        fprintf(stderr, "Erro: parâmetros inválidos.\n");
+        return NULL;
+    }
+
+    // Calcular o tamanho total necessário para armazenar as três strings mais o '\0'
+    size_t tamanho = strlen(parametro1) + strlen(instr) + 5;
+
+    // Alocar memória para o resultado
+    char* resultado = malloc(tamanho);
+    if (resultado == NULL) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Copiar as strings para o resultado
+    strcpy(resultado, parametro1);
+    strcat(resultado, instr);
+
+    return resultado;
+}
+
+
+// -------------------------------------------
 //            Funções Pilha
 // -------------------------------------------
 
@@ -336,140 +471,6 @@ asd_tree_t *cria_tipo(const char *tipo)
   return ret;
 }
 
-// -------------------------------------------
-//            Funções etapa 5
-// -------------------------------------------
-
-char* gera_temp() {
-    char buffer[20]; 
-    sprintf(buffer, "%d", contador_global);
-
-    size_t tamanho = strlen(buffer) + strlen("t") + 1;
-
-    char* resultado = malloc(tamanho);
-    if (resultado == NULL) {
-        fprintf(stderr, "Erro de alocação de memória.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    strcpy(resultado, "t");
-    strcat(resultado, buffer);
-    
-    contador_global++;
-
-    return resultado;
-}
-
-char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* parametro3) {
-	size_t tamanho = strlen(instrucao);
-	    
-	if (parametro1 != NULL) tamanho += strlen(parametro1);
-	if (parametro2 != NULL) tamanho += strlen(parametro2);
-	if (parametro3 != NULL) tamanho += strlen(parametro3);
-
-	tamanho += 5; 
-	tamanho += 1;  
-	char* resultado = malloc(tamanho);
-	
-	if (resultado == NULL) {
-		fprintf(stderr, "Erro de alocação de memória.\n");
-		exit(EXIT_FAILURE);
-    	}
-    	
-    	if(parametro2 == NULL) {
-    		strcpy(resultado, instrucao);
-    		strcat(resultado, "  ");
-    		strcat(resultado, parametro1);
-    		strcat(resultado, " => ");
-    		strcat(resultado, parametro3);
-    		strcat(resultado, "\n");
-    	}
-    	
-    	else if(parametro1 == NULL) {
-    		strcpy(resultado, instrucao);
-    		strcat(resultado, "  ");
-    		strcat(resultado, parametro2);
-    		strcat(resultado, " => ");
-    		strcat(resultado, parametro3);
-    		strcat(resultado, "\n");
-    	}
-    	
-    	// adicionar condicionais para gerar os outros formatos de instruções
-    	else {
-    		if(strcmp(instrucao, "storeAI") == 0 || strcmp(instrucao, "storeA0") == 0 || strcmp(instrucao, "cstoreAI") == 0 || strcmp(instrucao, "cstoreA0") == 0) {
-    			strcpy(resultado, instrucao);
-	    		strcat(resultado, "  ");
-	    		strcat(resultado, parametro1);
-	    		strcat(resultado, " => ");
-	    		strcat(resultado, parametro2);
-	    		strcat(resultado, ", ");
-	    		strcat(resultado, parametro3);
-	    		strcat(resultado, "\n");
-    		}
-    		else {
-    			strcpy(resultado, instrucao);
-	    		strcat(resultado, "  ");
-	    		strcat(resultado, parametro1);
-	    		strcat(resultado, ", ");
-	    		strcat(resultado, parametro2);
-	    		strcat(resultado, " => ");
-	    		strcat(resultado, parametro3);
-	    		strcat(resultado, "\n");
-    		}
-    	}
-    	
-    	return resultado;
-}
-
-char* concatena3(char* parametro1, char* parametro2, char* instr) {
-    // Verificar se algum parâmetro é NULL
-    if (parametro1 == NULL || parametro2 == NULL || instr == NULL) {
-        fprintf(stderr, "Erro: parâmetros inválidos.\n");
-        return NULL;
-    }
-
-    // Calcular o tamanho total necessário para armazenar as três strings mais o '\0'
-    size_t tamanho = strlen(parametro1) + strlen(parametro2) + strlen(instr) + 5;
-
-    // Alocar memória para o resultado
-    char* resultado = malloc(tamanho);
-    if (resultado == NULL) {
-        fprintf(stderr, "Erro de alocação de memória.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // Copiar as strings para o resultado
-    strcpy(resultado, parametro1);
-    strcat(resultado, parametro2);
-    strcat(resultado, instr);
-
-    return resultado;
-}
-
-char* concatena2(char* parametro1, char* instr) {
-    // Verificar se algum parâmetro é NULL
-    if (parametro1 == NULL || instr == NULL) {
-        fprintf(stderr, "Erro: parâmetros inválidos.\n");
-        return NULL;
-    }
-
-    // Calcular o tamanho total necessário para armazenar as três strings mais o '\0'
-    size_t tamanho = strlen(parametro1) + strlen(instr) + 5;
-
-    // Alocar memória para o resultado
-    char* resultado = malloc(tamanho);
-    if (resultado == NULL) {
-        fprintf(stderr, "Erro de alocação de memória.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // Copiar as strings para o resultado
-    strcpy(resultado, parametro1);
-    strcat(resultado, instr);
-
-    return resultado;
-}
-
 
 // -------------------------------------------
 //            Funções etapa 3
@@ -583,4 +584,67 @@ void asd_print_graphviz(asd_tree_t *tree)
   }else{
     printf("Erro: %s recebeu parâmetro tree = %p.\n", __FUNCTION__, tree);
   }
+}
+
+asd_tree_t* cria_nodo_expressao(char *expressao, asd_tree_t *filho_1, asd_tree_t *filho_2)
+{
+  asd_tree_t* nodo = asd_new(expressao);
+  asd_add_child(nodo, filho_1);
+  asd_add_child(nodo, filho_2);
+  char* tipo = infere_tipo(filho_1->tipo, filho_2->tipo);
+  nodo->tipo = tipo;
+  return nodo;
+}
+
+asd_tree_t* cria_nodo_expressao_unaria(char *expressao, asd_tree_t *filho_1)
+{
+  asd_tree_t* nodo = asd_new(expressao);
+  if(filho_1 != NULL) 
+    asd_add_child(nodo, filho_1);
+  nodo->tipo = filho_1->tipo;
+  return nodo;
+}
+
+asd_tree_t* processa_chamada_funcao(valor_lexico_t *identificador, asd_tree_t *filho_2, pilha_tabelas_t *pilha_tabelas) 
+{
+  char buffer[256]; 
+  snprintf(buffer, sizeof(buffer), "call %s", identificador->valor);
+  asd_tree_t* nodo = asd_new(buffer);
+  asd_add_child(nodo, filho_2);
+
+  conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, identificador->valor);
+  if (checa_id == NULL)
+    printa_erro(ERR_UNDECLARED, identificador->valor, identificador->linha, identificador->linha);
+  else if(strcmp(checa_id->natureza, "IDENTIFICADOR") == 0)
+    printa_erro(ERR_VARIABLE, checa_id->valor, identificador->linha, identificador->linha);
+
+  return nodo;
+}
+
+asd_tree_t* processa_atribuicao(valor_lexico_t *identificador, asd_tree_t *filho_2, pilha_tabelas_t *pilha_tabelas)
+{
+  asd_tree_t* nodo = asd_new("=");
+  asd_add_child(nodo, asd_new(identificador->valor)); 
+  asd_add_child(nodo, filho_2); 
+  conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, identificador->valor);
+  if (checa_id == NULL)
+    printa_erro(ERR_UNDECLARED, identificador->valor, identificador->linha, identificador->linha);
+  else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
+    printa_erro(ERR_FUNCTION, checa_id->valor, identificador->linha, identificador->linha);
+  nodo->tipo = checa_id->tipo;
+
+  return nodo;
+}
+
+asd_tree_t* processa_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas)
+{
+  asd_tree_t* nodo = asd_new(identificador->valor); 
+  conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, identificador->valor);
+  if (checa_id == NULL)
+    printa_erro(ERR_UNDECLARED, identificador->valor, identificador->linha, identificador->linha);
+  else if(strcmp(checa_id->natureza, "FUNCAO") == 0)
+    printa_erro(ERR_FUNCTION, checa_id->valor, identificador->linha, identificador->linha);
+  nodo->tipo = checa_id->tipo; 
+
+  return nodo;
 }
