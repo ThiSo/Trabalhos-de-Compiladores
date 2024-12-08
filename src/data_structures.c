@@ -4,7 +4,8 @@
 #include "data_structures.h"
 #include "erros.h"
 #define ARQUIVO_SAIDA "saida.dot"
-int contador_global = 0;
+int contador_temp_global = 0;
+int contador_label_global = 0;
 
 
 // -------------------------------------------
@@ -13,7 +14,7 @@ int contador_global = 0;
 
 char* gera_temp() {
     char buffer[20]; 
-    sprintf(buffer, "%d", contador_global);
+    sprintf(buffer, "%d", contador_temp_global);
 
     size_t tamanho = strlen(buffer) + strlen("t") + 1;
 
@@ -26,7 +27,27 @@ char* gera_temp() {
     strcpy(resultado, "t");
     strcat(resultado, buffer);
     
-    contador_global++;
+    contador_temp_global++;
+
+    return resultado;
+}
+
+char* gera_label() {
+    char buffer[20]; 
+    sprintf(buffer, "%d", contador_label_global);
+
+    size_t tamanho = strlen(buffer) + strlen("L")  + 1;
+
+    char* resultado = malloc(tamanho);
+    if (resultado == NULL) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(resultado, "L");
+    strcat(resultado, buffer);
+    
+    contador_label_global++;
 
     return resultado;
 }
@@ -38,8 +59,7 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
 	if (parametro2 != NULL) tamanho += strlen(parametro2);
 	if (parametro3 != NULL) tamanho += strlen(parametro3);
 
-	tamanho += 5; 
-	tamanho += 1;  
+	tamanho += 10; 
 	char* resultado = malloc(tamanho);
 	
 	if (resultado == NULL) {
@@ -47,46 +67,20 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
 		exit(EXIT_FAILURE);
     	}
     	
-    	if(parametro2 == NULL) {
-    		strcpy(resultado, instrucao);
-    		strcat(resultado, "  ");
-    		strcat(resultado, parametro1);
-    		strcat(resultado, " => ");
-    		strcat(resultado, parametro3);
-    		strcat(resultado, "\n");
-    	}
-    	
-    	else if(parametro1 == NULL) {
-    		strcpy(resultado, instrucao);
-    		strcat(resultado, "  ");
-    		strcat(resultado, parametro2);
-    		strcat(resultado, " => ");
-    		strcat(resultado, parametro3);
-    		strcat(resultado, "\n");
-    	}
+      if (parametro2 == NULL) {
+        snprintf(resultado, tamanho, "%s  %s => %s\n", instrucao, parametro1, parametro3);
+      } else if (parametro1 == NULL) {
+        snprintf(resultado, tamanho, "%s  %s => %s\n", instrucao, parametro2, parametro3);
+      }
     	
     	// adicionar condicionais para gerar os outros formatos de instruções
     	else {
-    		if(strcmp(instrucao, "storeAI") == 0 || strcmp(instrucao, "storeA0") == 0 || strcmp(instrucao, "cstoreAI") == 0 || strcmp(instrucao, "cstoreA0") == 0) {
-    			strcpy(resultado, instrucao);
-	    		strcat(resultado, "  ");
-	    		strcat(resultado, parametro1);
-	    		strcat(resultado, " => ");
-	    		strcat(resultado, parametro2);
-	    		strcat(resultado, ", ");
-	    		strcat(resultado, parametro3);
-	    		strcat(resultado, "\n");
-    		}
-    		else {
-    			strcpy(resultado, instrucao);
-	    		strcat(resultado, "  ");
-	    		strcat(resultado, parametro1);
-	    		strcat(resultado, ", ");
-	    		strcat(resultado, parametro2);
-	    		strcat(resultado, " => ");
-	    		strcat(resultado, parametro3);
-	    		strcat(resultado, "\n");
-    		}
+        if (strcmp(instrucao, "storeAI") == 0 || strcmp(instrucao, "storeA0") == 0 || 
+            strcmp(instrucao, "cstoreAI") == 0 || strcmp(instrucao, "cstoreA0") == 0 || strcmp(instrucao, "cbr") == 0){
+            snprintf(resultado, tamanho, "%s  %s => %s, %s\n", instrucao, parametro1, parametro2, parametro3);
+        } else {
+            snprintf(resultado, tamanho, "%s  %s, %s => %s\n", instrucao, parametro1, parametro2, parametro3);
+        }
     	}
     	
     	return resultado;
@@ -94,8 +88,16 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
 
 char* concatena3(char* parametro1, char* parametro2, char* instr) {
     // Verificar se algum parâmetro é NULL
-    if (parametro1 == NULL || parametro2 == NULL || instr == NULL) {
-        fprintf(stderr, "Erro: parâmetros inválidos.\n");
+    if (parametro1 == NULL) {
+        fprintf(stderr, "Erro: parâmetro 1 inválido.\n");
+        return NULL;
+    }
+    else if (parametro2 == NULL) {
+        fprintf(stderr, "Erro: parâmetro 2 inválido.\n");
+        return NULL;
+    }
+    else if (instr == NULL) {
+        fprintf(stderr, "Erro: parâmetro instr inválido.\n");
         return NULL;
     }
 
@@ -119,8 +121,12 @@ char* concatena3(char* parametro1, char* parametro2, char* instr) {
 
 char* concatena2(char* parametro1, char* instr) {
     // Verificar se algum parâmetro é NULL
-    if (parametro1 == NULL || instr == NULL) {
-        fprintf(stderr, "Erro: parâmetros inválidos.\n");
+    if (parametro1 == NULL) {
+        fprintf(stderr, "Erro: parâmetro 1 inválido.\n");
+        return NULL;
+    }
+    else if (instr == NULL) {
+        fprintf(stderr, "Erro: parâmetro instr inválido.\n");
         return NULL;
     }
 

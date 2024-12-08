@@ -7,6 +7,8 @@ typedef struct asd_tree {
   char *label;
   char *codigo;
   char *local;
+  char *t;
+  char *f;
   int number_of_children;
   struct asd_tree **children;
 } asd_tree_t;
@@ -142,6 +144,8 @@ asd_tree_t *cria_tipo(const char *tipo);
 
 char* gera_temp();
 
+char* gera_label();
+
 char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* parametro3);
 
 char* concatena3(char* parametro1, char* parametro2, char* instr);
@@ -193,3 +197,4 @@ asd_tree_t* processa_atribuicao(valor_lexico_t *identificador, asd_tree_t *filho
 asd_tree_t* processa_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas);
 
 #endif // DATA_STRUCTURES_H
+

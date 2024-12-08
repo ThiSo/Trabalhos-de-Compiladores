@@ -79,12 +79,13 @@
 
 inicializacao: abre_escopo_global programa fecha_escopo_global         
 
+
 abre_escopo_global:                                                    
 { 
   tabela_simbolos_t *tabela_global = cria_tabela_simbolos();
-  // Pilha deve ser inicializada com a tabela global (atualizaçao na spec)
   pilha_tabelas = cria_pilha(tabela_global); 
 };
+
 
 abre_escopo_func:                                                      
 { 
@@ -92,34 +93,43 @@ abre_escopo_func:
   empilhar(&pilha_tabelas, tabela_func); 
 };
 
+
 abre_escopo_aninhado:                                                  
 { 
   tabela_simbolos_t *tabela_aninhada = cria_tabela_simbolos();
   empilhar(&pilha_tabelas, tabela_aninhada); 
 };
 
+
 fecha_escopo_global:                                                   
 { 
   destroi_pilha(pilha_tabelas); 
 };
+
 
 fecha_escopo_func:                                                     
 { 
   desempilhar(&pilha_tabelas);
 };
 
+
 fecha_escopo_aninhado:                                                 
 { 
   desempilhar(&pilha_tabelas);
 };
 
+
 programa: lista_de_funcoes { 
-  $$ = $1; arvore = $$;
+  $$ = $1; 
+  arvore = $$;
+  // printf("%s\n", $$->codigo);
 }
         |  { 
-  $$ = NULL; arvore = $$;
+  $$ = NULL; 
+  arvore = $$;
 };
-                             
+
+
 lista_de_funcoes: funcao fecha_escopo_func lista_de_funcoes { 
   $$ = $1; 
   if($3 != NULL) 
@@ -129,18 +139,21 @@ lista_de_funcoes: funcao fecha_escopo_func lista_de_funcoes {
   $$ = $1; 
 };         
 
+
 funcao: cabecalho corpo	{ 
   $$ = $1; 
   if($2 != NULL) 
     asd_add_child($$, $2); 
+  printf("%s\n", $2->codigo);
 };	    
+
 
 // -----------------------------------------------------------------------------------
 // Escopo da funcao 
 // abre apos o '=' e nao apos as primeiras chaves	
 // -----------------------------------------------------------------------------------	
 
-// { /* segundo o professor, colocar na tabela que está EM BAIXO (global) $1 e $6 */ };
+
 cabecalho: TK_IDENTIFICADOR '=' abre_escopo_func lista_parametros '>' tipo_variavel { 
   $$ = asd_new($1->valor);
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "FUNCAO", $6->tipo, $1->valor);
@@ -159,14 +172,13 @@ lista_parametros: parametro TK_OC_OR lista_parametros {
 };            
 
 
- // { /* coloca na tabela que esta no topo $1 e $4 */ }; 
 parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel  { 
   $$ = NULL; 
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", $4->tipo, $1->valor);
   adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada);
 };
 
-// necessária criação de um nodo com tipo aqui, pois os nodos criados com asd_new sempre vem com tipo = NULL, e na etapa 3 essa regra era apenas $$ = NULL
+
 tipo_variavel: TK_PR_INT { 
   $$ = cria_tipo("INT"); 
 } 
@@ -174,9 +186,11 @@ tipo_variavel: TK_PR_INT {
   $$ = cria_tipo("FLOAT"); 
 };   
 
+
 corpo: bloco_comandos_func { 
   $$ = $1;
 };    
+
 
 bloco_comandos_func: '{' lista_comandos '}' { 
   $$ = $2;
@@ -193,9 +207,11 @@ bloco_comandos: '{' abre_escopo_aninhado lista_comandos fecha_escopo_aninhado '}
   $$ = NULL; 
 };
 
+
 // -----------------------------------------------------------------------------------
 // Escopo aninhado
 // -----------------------------------------------------------------------------------
+
 
 lista_comandos: comando { 
   $$ = $1;    // Tratamento para as variaveis não inicializadas
@@ -205,7 +221,8 @@ lista_comandos: comando {
   if(($$ != NULL) && ($2 != NULL))
     asd_add_child($$, $2);
   else if ($2 != NULL ) 
-    $$ = $2; 
+    $$ = $2;
+  $$->codigo = concatena2($1->codigo, $2->codigo);  // Essa linha realiza a concatenação de multiplos comandos
 } 
               | declaracao_variavel ';' lista_comandos { 
   $$ = $1; 
@@ -219,6 +236,7 @@ lista_comandos: comando {
   $$ = $1; 
 };
 
+
 comando: bloco_comandos ';' { 
   $$ = $1; 
 }
@@ -226,7 +244,7 @@ comando: bloco_comandos ';' {
   $$ = $1; 
 }
        | atribuicao ';' { 
-  $$ = $1; 
+  $$ = $1;
 }
        | chamada_funcao ';' { 
   $$ = $1; 
@@ -235,14 +253,12 @@ comando: bloco_comandos ';' {
   $$ = $1; 
 };
 
-// Atribuir tipos deixados na tabela como "atribuir depois" aqui
 declaracao_variavel: tipo_variavel lista_variaveis { 
   $$ = $2;
   atribui_tipo(pilha_tabelas->tabela_simbolos, $1->tipo);
   calcula_deslocamentos(pilha_tabelas->tabela_simbolos);
 };   
-
-// variaveis não inicializadas não entram na AST (mesmo comando)                         
+                      
 lista_variaveis: variavel ',' lista_variaveis { 
   if($1 == NULL) 
     $$ = $3; 
@@ -256,7 +272,7 @@ lista_variaveis: variavel ',' lista_variaveis {
   $$ = $1; 
 };     
 
-// variaveis não inicializadas não entram na AST (comandos separados)
+
 variavel: TK_IDENTIFICADOR { 
   $$ = NULL;
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
@@ -268,6 +284,7 @@ variavel: TK_IDENTIFICADOR {
   adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); 
 };
 
+
 literal: TK_LIT_INT { 
   $$ = asd_new($1->valor);
   $$->tipo = strdup("INT"); 
@@ -277,10 +294,12 @@ literal: TK_LIT_INT {
   $$->tipo = strdup("FLOAT"); 
 };                                         
 
+
 retorno: TK_PR_RETURN expressao { 
   $$ = asd_new("return"), asd_add_child($$, $2); 
 };                                                                    
-                                                     
+
+
 controle_fluxo: ifs {
   $$ = $1; 
 }
@@ -288,12 +307,29 @@ controle_fluxo: ifs {
   $$ = $1; 
 };                                                                
 
+
 ifs: TK_PR_IF '(' expressao ')' bloco_comandos { 
   $$ = asd_new("if");
   asd_add_child($$,$3); 
   if($5 != NULL) 
     asd_add_child($$, $5);
+
+  char *temporario = gera_temp();
+  char *label_true = gera_label();
+  char *label_false = gera_label();
+  char* instr_if = cria_instrucao("cbr", $3->local, label_true, label_false);
+  
+  $$->codigo = concatena2($3->codigo, instr_if);
+  $$->codigo = concatena3($$->codigo, label_true, ":");
+  $$->codigo = concatena2($$->codigo, "\n");
+  $$->codigo = concatena2($$->codigo, $5->codigo);
+  $$->codigo = concatena3($$->codigo, label_false, ":");
+  $$->codigo = concatena2($$->codigo, "\n");
+  $$->local = temporario;
+
+  //printf("%s\n", $$->codigo);
 }
+
    | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { 
   $$ = asd_new("if"); 
   asd_add_child($$,$3); 
@@ -301,13 +337,25 @@ ifs: TK_PR_IF '(' expressao ')' bloco_comandos {
     asd_add_child($$, $5);  
   if($7 != NULL) 
     asd_add_child($$, $7); 
+
+  char *temporario = gera_temp();
+  char *else_temp = gera_temp();
+  char* instr_if = cria_instrucao("cbr", $3->local, temporario, else_temp);
+  
+  $$->codigo = concatena3($3->codigo, instr_if, $5->codigo);
+  $$->local = temporario;
+
+  printf("%s\n", $$->codigo);
 };                        
 
 whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos { 
   $$ = asd_new("while"); 
   asd_add_child($$,$3);
   if($5 != NULL)
-    asd_add_child($$, $5);  
+    asd_add_child($$, $5); 
+
+  // etapa 5
+  //
 };                                            
 
 // --------------------------------------------------------------
@@ -315,17 +363,16 @@ whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos {
 atribuicao: TK_IDENTIFICADOR '=' expressao { 
   $$ = processa_atribuicao($1, $3, pilha_tabelas);
 
-  // etapa 5:
-  //
-  // recuperar da entrada na tabela também o deslocamento, para uso logo abaixo
   // illoc_t *instr_store = NULL, *instr_add = NULL;
-   char* temp = gera_temp();
-  //instr_add = cria_instrucao("add", "rfp", checa_id.deslocamento, temp);
-   char buffer[20]; 
-   sprintf(buffer, "%d", checa_id->deslocamento);
-   char* instr_store = cria_instrucao("storeAI", $3->local, "rfp", buffer);
-   $$->codigo = concatena2($3->codigo, instr_store);
-   printf("%s\n", $$->codigo);
+  // char* temp = gera_temp();
+  // instr_add = cria_instrucao("add", "rfp", checa_id.deslocamento, temp);
+
+  char buffer[20]; 
+  sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, $1->valor)->deslocamento);
+  char* instr_store = cria_instrucao("storeAI", $3->local, "rfp", buffer);
+  
+  $$->codigo = concatena2($3->codigo, instr_store);
+  //printf("%s\n", $$->codigo);
 };                                     
 
 
@@ -480,7 +527,6 @@ prec2: prec2 '*' prec1 {
   $$->codigo = concatena3($1->codigo, $3->codigo, instr_mult);
   $$->local = temporario;
 
-  //
   // exemplo transformando em funcao: 
   // 
   // typedef struct {
@@ -516,55 +562,49 @@ prec2: prec2 '/' prec1 {
 
 prec2: prec2 '%' prec1 { 
   $$ = cria_nodo_expressao("%", $1, $3);
-
-  // etapa 5:
-  //
-  // $$->local = NULL;
-  // $$.codigo = NULL; 
 };
 
 
 prec2: prec1 { 
   $$ = $1; 
-
-  // etapa 5:
-  //
-  // $$->local = NULL;
-  // $$.codigo = NULL; 
 };
 
 
 prec1:'!' prec1 { 
   $$ = cria_nodo_expressao_unaria("!", $2);
 
-  // etapa 5:
-  //
-  // dar um jeito de tratar este caso, por exemplo com ifs (já que a gramática não tem booleanos)
+  // TODO
+  if ($2) {
+    $$->local  = gera_temp();
+    $$->codigo = cria_instrucao("loadI", "0", NULL, $$->local);
+  }
+  else {
+    $$->local  = gera_temp();
+    $$->codigo = cria_instrucao("loadI", "1", NULL, $$->local);
+  }
 }
     | '-' prec1 { 
   $$ = cria_nodo_expressao_unaria("-", $2);
 
-  // etapa 5:
-  //
-  // necessário multiplicar o valor por (-1) aqui 
+  char *temporario_neg = gera_temp();
+  char* instr_neg = cria_instrucao("multI", $2->local, "-1", temporario_neg);
+
+  $$->codigo = concatena2($2->codigo, instr_neg);
+  $$->local = temporario_neg;
 };
 
 
 prec1: '(' expressao ')' { 
   $$ = $2;
-  $$->local = NULL;
-  $$->codigo = NULL;
 };
 
 
 prec1:TK_IDENTIFICADOR { 
   $$ = processa_expressao($1, pilha_tabelas);
 
-  // etapa 5:
-  //
   $$->local  = gera_temp();
   char buffer[20]; 
-  sprintf(buffer, "%d", checa_id->deslocamento); // Converte o número para string
+  sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, $1->valor)->deslocamento); 
   $$->codigo = cria_instrucao("loadI", "rfp", buffer, $$->local);
 };
 
@@ -572,10 +612,8 @@ prec1:TK_IDENTIFICADOR {
   $$ = asd_new($1->valor); 
   $$->tipo = strdup("INT"); 
 
-  // etapa 5:
-  //
   $$->local  = gera_temp();
-  // $$->codigo = cria_instrucao("loadI", "rfp", buffer, $$->local);
+  $$->codigo = cria_instrucao("loadI", $1->valor, NULL, $$->local);
 }
 
     | TK_LIT_FLOAT { 
@@ -584,9 +622,7 @@ prec1:TK_IDENTIFICADOR {
 }
                                          
     | chamada_funcao { 
-  $$ = $1; 
-  $$->local = NULL;
-  $$->codigo = NULL;
+  $$ = $1;
 };
                           
 %%
@@ -595,3 +631,4 @@ void yyerror(char const *mensagem)
 {
     fprintf(stderr, "Erro %s na linha: %d\n", mensagem, get_line_number());
 }
+
