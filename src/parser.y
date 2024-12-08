@@ -113,28 +113,23 @@ fecha_escopo_aninhado:
   desempilhar(&pilha_tabelas);
 };
 
-programa: lista_de_funcoes 	                                           
-{ 
+programa: lista_de_funcoes { 
   $$ = $1; arvore = $$;
 }
-        |                                                                  
-{ 
+        |  { 
   $$ = NULL; arvore = $$;
 };
                              
-lista_de_funcoes: funcao fecha_escopo_func lista_de_funcoes 	         
-{ 
+lista_de_funcoes: funcao fecha_escopo_func lista_de_funcoes { 
   $$ = $1; 
   if($3 != NULL) 
     asd_add_child($$, $3);
 }          
-                | funcao fecha_escopo_func		                                 
-{ 
+                | funcao fecha_escopo_func { 
   $$ = $1; 
 };         
 
-funcao: cabecalho corpo				                                         
-{ 
+funcao: cabecalho corpo	{ 
   $$ = $1; 
   if($2 != NULL) 
     asd_add_child($$, $2); 
@@ -146,67 +141,55 @@ funcao: cabecalho corpo
 // -----------------------------------------------------------------------------------	
 
 // { /* segundo o professor, colocar na tabela que está EM BAIXO (global) $1 e $6 */ };
-cabecalho: TK_IDENTIFICADOR '=' abre_escopo_func lista_parametros '>' tipo_variavel 	
-{ 
+cabecalho: TK_IDENTIFICADOR '=' abre_escopo_func lista_parametros '>' tipo_variavel { 
   $$ = asd_new($1->valor);
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "FUNCAO", $6->tipo, $1->valor);
   adiciona_entrada(pilha_tabelas->prox->tabela_simbolos, entrada);
 };    
 
 
-lista_parametros: parametro TK_OC_OR lista_parametros               
-{ 
+lista_parametros: parametro TK_OC_OR lista_parametros { 
   $$ = NULL; 
 }
-                | parametro 			                                          
-{ 
+                | parametro { 
   $$ = NULL; 
 }
-                |                                                           
-{ 
+                | { 
   $$ = NULL; 
 };            
 
 
  // { /* coloca na tabela que esta no topo $1 e $4 */ }; 
-parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel                   
-{ 
+parametro: TK_IDENTIFICADOR '<' '-' tipo_variavel  { 
   $$ = NULL; 
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", $4->tipo, $1->valor);
   adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada);
 };
 
 // necessária criação de um nodo com tipo aqui, pois os nodos criados com asd_new sempre vem com tipo = NULL, e na etapa 3 essa regra era apenas $$ = NULL
-tipo_variavel: TK_PR_INT		                             
-{ 
+tipo_variavel: TK_PR_INT { 
   $$ = cria_tipo("INT"); 
 } 
-             | TK_PR_FLOAT 		                           
-{ 
+             | TK_PR_FLOAT { 
   $$ = cria_tipo("FLOAT"); 
 };   
 
-corpo: bloco_comandos_func                               
-{ 
+corpo: bloco_comandos_func { 
   $$ = $1;
 };    
 
-bloco_comandos_func: '{' lista_comandos '}'             
-{ 
+bloco_comandos_func: '{' lista_comandos '}' { 
   $$ = $2;
 }
-                   | '{' '}'                             
-{ 
+                   | '{' '}' { 
   $$ = NULL; 
 };
 
 
-bloco_comandos: '{' abre_escopo_aninhado lista_comandos fecha_escopo_aninhado '}'              
-{ 
+bloco_comandos: '{' abre_escopo_aninhado lista_comandos fecha_escopo_aninhado '}' { 
   $$ = $3; 
 }
-              | '{' abre_escopo_aninhado fecha_escopo_aninhado'}'                              
-{ 
+              | '{' abre_escopo_aninhado fecha_escopo_aninhado'}' { 
   $$ = NULL; 
 };
 
@@ -214,20 +197,17 @@ bloco_comandos: '{' abre_escopo_aninhado lista_comandos fecha_escopo_aninhado '}
 // Escopo aninhado
 // -----------------------------------------------------------------------------------
 
-lista_comandos: comando 		                                           
-{ 
+lista_comandos: comando { 
   $$ = $1;    // Tratamento para as variaveis não inicializadas
 }       
-              | comando lista_comandos	            	                 
-{ 
+              | comando lista_comandos { 
   $$ = $1; 
   if(($$ != NULL) && ($2 != NULL))
     asd_add_child($$, $2);
   else if ($2 != NULL ) 
     $$ = $2; 
 } 
-              | declaracao_variavel ';' lista_comandos		             
-{ 
+              | declaracao_variavel ';' lista_comandos { 
   $$ = $1; 
   if ($$ != NULL) { 
     if($3 != NULL) 
@@ -235,42 +215,35 @@ lista_comandos: comando
   } 
   else $$ = $3; 
 }
-              | declaracao_variavel ';' 	                             
-{ 
+              | declaracao_variavel ';' { 
   $$ = $1; 
 };
 
-comando: bloco_comandos ';' 		                                       
-{ 
+comando: bloco_comandos ';' { 
   $$ = $1; 
 }
-       | retorno ';' 			                                             
-{ 
+       | retorno ';' { 
   $$ = $1; 
 }
-       | atribuicao ';' 		                                          
-{ 
+       | atribuicao ';' { 
   $$ = $1; 
 }
-       | chamada_funcao ';' 		                                       
-{ 
+       | chamada_funcao ';' { 
   $$ = $1; 
 }
-       | controle_fluxo ';'		                                         
-{ 
+       | controle_fluxo ';' { 
   $$ = $1; 
 };
 
 // Atribuir tipos deixados na tabela como "atribuir depois" aqui
-declaracao_variavel: tipo_variavel lista_variaveis	                     
-{ 
+declaracao_variavel: tipo_variavel lista_variaveis { 
   $$ = $2;
   atribui_tipo(pilha_tabelas->tabela_simbolos, $1->tipo);
+  calcula_deslocamentos(pilha_tabelas->tabela_simbolos);
 };   
 
 // variaveis não inicializadas não entram na AST (mesmo comando)                         
-lista_variaveis: variavel ',' lista_variaveis 		                       
-{ 
+lista_variaveis: variavel ',' lista_variaveis { 
   if($1 == NULL) 
     $$ = $3; 
   else { 
@@ -279,60 +252,50 @@ lista_variaveis: variavel ',' lista_variaveis
       asd_add_child($$, $3); 
   }
 };       
-               | variavel				                                         
-{ 
+               | variavel { 
   $$ = $1; 
 };     
 
 // variaveis não inicializadas não entram na AST (comandos separados)
-variavel: TK_IDENTIFICADOR 				                                       
-{ 
+variavel: TK_IDENTIFICADOR { 
   $$ = NULL;
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
   adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); 
 }
-        | TK_IDENTIFICADOR TK_OC_LE literal		                           
-{
+        | TK_IDENTIFICADOR TK_OC_LE literal {
   $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); 
   // Talvez usar $3->tipo em vez de ATRIBUIR_DEPOIS aqui? - perguntar pro professor
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
   adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); 
 };
 
-literal: TK_LIT_INT   					                                         
-{ 
+literal: TK_LIT_INT { 
   $$ = asd_new($1->valor);
   $$->tipo = strdup("INT"); 
 }  
-       | TK_LIT_FLOAT 					                                         
-{ 
+       | TK_LIT_FLOAT { 
   $$ = asd_new($1->valor);
   $$->tipo = strdup("FLOAT"); 
 };                                         
 
-retorno: TK_PR_RETURN expressao				                                   
-{ 
+retorno: TK_PR_RETURN expressao { 
   $$ = asd_new("return"), asd_add_child($$, $2); 
 };                                                                    
                                                      
-controle_fluxo: ifs                     		                             
-{
+controle_fluxo: ifs {
   $$ = $1; 
 }
-              | whiles                  		                             
-{ 
+              | whiles { 
   $$ = $1; 
 };                                                                
 
-ifs: TK_PR_IF '(' expressao ')' bloco_comandos                           
-{ 
+ifs: TK_PR_IF '(' expressao ')' bloco_comandos { 
   $$ = asd_new("if");
   asd_add_child($$,$3); 
   if($5 != NULL) 
     asd_add_child($$, $5);
 }
-   | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos 
-{ 
+   | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { 
   $$ = asd_new("if"); 
   asd_add_child($$,$3); 
   if($5 != NULL) 
@@ -341,8 +304,7 @@ ifs: TK_PR_IF '(' expressao ')' bloco_comandos
     asd_add_child($$, $7); 
 };                        
 
-whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos                     
-{ 
+whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos { 
   $$ = asd_new("while"); 
   asd_add_child($$,$3);
   if($5 != NULL)
@@ -354,8 +316,7 @@ whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos
 // checar aqui se identificador ja foi criado procurando na tabela no topo da pilha e nas abaixo
 // checar também se identificador está sendo usado corretamente (erro function -> se função é usada como variável)
 // comando de atribuição deve ter inferência de tipo e "passar pra cima" o seu tipo com base na tabela  
-atribuicao: TK_IDENTIFICADOR '=' expressao                               
-{ 
+atribuicao: TK_IDENTIFICADOR '=' expressao { 
   $$ = asd_new("="); 
   asd_add_child($$, asd_new($1->valor)); 
   asd_add_child($$, $3); 
@@ -370,16 +331,16 @@ atribuicao: TK_IDENTIFICADOR '=' expressao
   //
   // recuperar da entrada na tabela também o deslocamento, para uso logo abaixo
   // illoc_t *instr_store = NULL, *instr_add = NULL;
-  // temp_t temp = gera_temp();
-  // instr_add = cria_instrucao("add", "rfp", checa_id.deslocamento, temp);
-  // instr_store = cria_instrucao2("store", $3.local, temp);
-  // $$.codigo = concatena_instrucoes($3.codigo, instr_add, instr_store);
+   char* temp = gera_temp();
+  //instr_add = cria_instrucao("add", "rfp", checa_id.deslocamento, temp);
+   char* instr_store = cria_instrucao("store", $3->local, NULL, temp);
+   $$->codigo = concatena2($3->codigo, instr_store);
+   printf("%s\n", $$->codigo);
 };                                     
 
 // checar aqui tambem se undeclared
 // além disso, checar se está sendo usado corretamente (erro variable -> variavel utilizada como função)
-chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'                
-{ 
+chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')' { 
   char buffer[256]; 
   snprintf(buffer, sizeof(buffer), "call %s", $1->valor); 
   $$ = asd_new(buffer); 
@@ -391,12 +352,10 @@ chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')'
     printa_erro(ERR_VARIABLE, checa_id->valor, $1->linha, $1->linha);
 };           
 
-lista_argumentos: expressao                                              
-{ 
+lista_argumentos: expressao { 
   $$ = $1; 
 }
-                | expressao ',' lista_argumentos                         
-{ 
+                | expressao ',' lista_argumentos { 
   $$ = $1; 
   asd_add_child($$, $3); 
 };
@@ -405,8 +364,7 @@ lista_argumentos: expressao
 // (int, int) -> int
 // (float, float) -> float
 // (float, int) -> float
-expressao: expressao TK_OC_OR prec6     
-{ 
+expressao: expressao TK_OC_OR prec6 { 
   $$ = asd_new("|"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -414,13 +372,11 @@ expressao: expressao TK_OC_OR prec6
   $$->tipo = tipo; 
 };
 
-expressao: prec6                        
-{ 
+expressao: prec6 { 
   $$ = $1; 
 };
 
-prec6: prec6 TK_OC_AND prec5            
-{ 
+prec6: prec6 TK_OC_AND prec5 { 
   $$ = asd_new("&"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -428,13 +384,11 @@ prec6: prec6 TK_OC_AND prec5
   $$->tipo = tipo; 
 }; 
 
-prec6: prec5                            
-{ 
+prec6: prec5 { 
   $$ = $1; 
 };
 
-prec5: prec5 TK_OC_EQ prec4             
-{ 
+prec5: prec5 TK_OC_EQ prec4 { 
   $$ = asd_new("=="); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -442,8 +396,7 @@ prec5: prec5 TK_OC_EQ prec4
   $$->tipo = tipo; 
 };
 
-prec5: prec5 TK_OC_NE prec4             
-{ 
+prec5: prec5 TK_OC_NE prec4 { 
   $$ = asd_new("!="); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -451,13 +404,11 @@ prec5: prec5 TK_OC_NE prec4
   $$->tipo = tipo; 
 };
 
-prec5: prec4                            
-{ 
+prec5: prec4 { 
   $$ = $1; 
 };
 
-prec4: prec4 '<' prec3                  
-{ 
+prec4: prec4 '<' prec3 { 
   $$ = asd_new("<"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -465,8 +416,7 @@ prec4: prec4 '<' prec3
   $$->tipo = tipo;
 };
 
-prec4: prec4 '>' prec3                  
-{ 
+prec4: prec4 '>' prec3 { 
   $$ = asd_new(">"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -474,8 +424,7 @@ prec4: prec4 '>' prec3
   $$->tipo = tipo; 
 };
 
-prec4: prec4 TK_OC_LE prec3             
-{ 
+prec4: prec4 TK_OC_LE prec3 { 
   $$ = asd_new("<="); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -483,8 +432,7 @@ prec4: prec4 TK_OC_LE prec3
   $$->tipo = tipo; 
 };
 
-prec4: prec4 TK_OC_GE prec3             
-{ 
+prec4: prec4 TK_OC_GE prec3 { 
   $$ = asd_new(">="); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -492,35 +440,43 @@ prec4: prec4 TK_OC_GE prec3
   $$->tipo = tipo; 
 };
 
-prec4: prec3                            
-{ 
+prec4: prec3 { 
   $$ = $1; 
 };
 
-prec3: prec3 '+' prec2                  
-{ 
+prec3: prec3 '+' prec2 { 
   $$ = asd_new("+"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
   $$->tipo = tipo; 
+  
+  char *temporario = gera_temp();
+  char* instr_add = cria_instrucao("add", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_add);
+  $$->local = temporario;
+  //printf("%s\n", $$->codigo);
 };
 
-prec3: prec3 '-' prec2                  
-{ $$ = asd_new("-"); 
+prec3: prec3 '-' prec2 { 
+  $$ = asd_new("-"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
   char* tipo = infere_tipo($1->tipo, $3->tipo);
-  $$->tipo = tipo; 
+  $$->tipo = tipo;
+  
+  char *temporario = gera_temp();
+  char* instr_sub = cria_instrucao("sub", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_sub);
+  $$->local = temporario;
+  //printf("%s\n", $$->codigo); 
 };
 
-prec3: prec2                            
-{ 
+prec3: prec2 { 
   $$ = $1; 
 };  
 
-prec2: prec2 '*' prec1                  
-{ 
+prec2: prec2 '*' prec1 { 
   $$ = asd_new("*"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3); 
@@ -529,10 +485,10 @@ prec2: prec2 '*' prec1
 
   // etapa 5:
   //
-  // temp_t temporario = gera_temp();
-  // illoc_t instr_mult = cria_instrucao("mult", $1.local, $3.local, temporario);
-  // $$.codigo = concatena3($1.codigo, $3.codigo, instr_mult);
-  // $$.local = temporario();
+  char *temporario = gera_temp();
+  char* instr_mult = cria_instrucao("mult", $1->local, $3->local, temporario);
+  $$->codigo = concatena3($1->codigo, $3->codigo, instr_mult);
+  $$->local = temporario;
   //
   // exemplo transformando em funcao: 
   // 
@@ -556,8 +512,7 @@ prec2: prec2 '*' prec1
   // $$.local = retorno.temporario;
 };
 
-prec2: prec2 '/' prec1                  
-{ 
+prec2: prec2 '/' prec1 { 
   $$ = asd_new("/"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -565,8 +520,7 @@ prec2: prec2 '/' prec1
   $$->tipo = tipo; 
 };
 
-prec2: prec2 '%' prec1                  
-{ 
+prec2: prec2 '%' prec1 { 
   $$ = asd_new("%"); 
   asd_add_child($$, $1); 
   asd_add_child($$, $3);
@@ -575,22 +529,20 @@ prec2: prec2 '%' prec1
 
   // etapa 5:
   //
-  // $$.local = NULL;
+  // $$->local = NULL;
   // $$.codigo = NULL; 
 };
 
-prec2: prec1                            
-{ 
+prec2: prec1 { 
   $$ = $1; 
 
   // etapa 5:
   //
-  // $$.local = NULL;
+  // $$->local = NULL;
   // $$.codigo = NULL; 
 };
 
-prec1:'!' prec1                         
-{ 
+prec1:'!' prec1 { 
   $$ = asd_new("!"); 
   if($2 != NULL) 
     asd_add_child($$, $2);
@@ -600,8 +552,7 @@ prec1:'!' prec1
   //
   // dar um jeito de tratar este caso, por exemplo com ifs (já que a gramática não tem booleanos)
 }
-    | '-' prec1                         
-{ 
+    | '-' prec1 { 
   $$ = asd_new("-"); 
   if($2 != NULL) 
     asd_add_child($$, $2); 
@@ -612,19 +563,17 @@ prec1:'!' prec1
   // necessário multiplicar o valor por (-1) aqui 
 };
 
-prec1: '(' expressao ')'                
-{ 
+prec1: '(' expressao ')' { 
   $$ = $2;
 
   // etapa 5:
   //
-  // $$.local = NULL;
-  // $$.codigo = NULL;
+  $$->local = NULL;
+  $$->codigo = NULL;
 };
 
 // checar aqui também se undeclared, da mesma forma que na atribuição
-prec1:TK_IDENTIFICADOR                  
-{ 
+prec1:TK_IDENTIFICADOR { 
   $$ = asd_new($1->valor); 
   conteudo_tabela_simbolos_t *checa_id = busca_entrada_pilha(pilha_tabelas, $1->valor);
   if (checa_id == NULL)
@@ -635,40 +584,39 @@ prec1:TK_IDENTIFICADOR
 
   // etapa 5:
   //
-  // $$.local  = gera_temp();
-  // $$.codigo = cria_instrucao("loadAI", "rfp", checa_id->deslocamento, $$.local);
+  $$->local  = gera_temp();
+  char buffer[20]; 
+  sprintf(buffer, "%d", checa_id->deslocamento); // Converte o número para string
+  $$->codigo = cria_instrucao("loadI", "rfp", buffer, $$->local);
 };
 
-    | TK_LIT_INT                        
-{ 
+    | TK_LIT_INT { 
   $$ = asd_new($1->valor); 
   $$->tipo = strdup("INT"); 
 
   // etapa 5:
   //
-  // $$.local  = gera_temp();
-  // $$.codigo = cria_instrucao("loadI", "rfp", checa_id->deslocamento, $$.local);
+  $$->local  = gera_temp();
+  // $$->codigo = cria_instrucao("loadI", "rfp", buffer, $$->local);
 }
 
-    | TK_LIT_FLOAT                      
-{ 
+    | TK_LIT_FLOAT { 
   $$ = asd_new($1->valor); 
   $$->tipo = strdup("FLOAT"); 
 
   // etapa 5:
   //
-  // $$.local  = gera_temp();
-  // $$.codigo = cria_instrucao("loadI", "rfp", checa_id->deslocamento, $$.local);
+  $$->local  = gera_temp();
+  // $$->codigo = cria_instrucao("loadI", "rfp", buffer, $$->local);
 }
                                          
-    | chamada_funcao                    
-{ 
+    | chamada_funcao { 
   $$ = $1; 
 
   // etapa 5:
   //
-  // $$.local = NULL;
-  // $$.codigo = NULL;
+  $$->local = NULL;
+  $$->codigo = NULL;
 };
                           
 %%

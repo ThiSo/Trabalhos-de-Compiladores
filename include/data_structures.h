@@ -5,6 +5,8 @@
 typedef struct asd_tree {
   char *tipo;       // Int, float ou atribuir depois
   char *label;
+  char *codigo;
+  char *local;
   int number_of_children;
   struct asd_tree **children;
 } asd_tree_t;
@@ -19,6 +21,7 @@ typedef struct valor_lexico {
 
 typedef struct conteudo_tabela_simbolos {
     int linha;
+    int deslocamento;
     char* natureza; // Identificador ou função
     char* tipo;
     char* valor;
@@ -67,6 +70,11 @@ void desempilhar(pilha_tabelas_t **pilha);
  */
 conteudo_tabela_simbolos_t* busca_entrada_pilha(pilha_tabelas_t *pilha, const char *valor);
 
+/*
+ * Função printa_pilha_tabelas, DEBUG.
+ */
+void printa_pilha_tabelas(pilha_tabelas_t *pilha);
+
 
 // ----------------------------------------------------------
 //                      Funções tabela 
@@ -99,6 +107,11 @@ void atribui_tipo (tabela_simbolos_t *tabela, char *tipo);
  */
 void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *entrada);
 
+/*
+ * Função calcula_deslocamentos, calcula deslocamentos das entradas da tabela que não puderam ser calculados em algum momento.
+ */
+void calcula_deslocamentos(tabela_simbolos_t *tabela);
+
 
 /*
  * Função destroi_tabela_simbolos, libera a memória alocada para a lista.
@@ -122,6 +135,18 @@ void printa_erro(int erro, const char *valor, int linha, int linha2);
 asd_tree_t* corrige_ordem_filhos(asd_tree_t *arvore);
 
 asd_tree_t *cria_tipo(const char *tipo);
+
+// ----------------------------------------------------------
+//                      Funções etapa 5 
+// ----------------------------------------------------------
+
+char* gera_temp();
+
+char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* parametro3);
+
+char* concatena3(char* parametro1, char* parametro2, char* instr);
+
+char* concatena2(char* parametro1, char* instr);
 
 // ----------------------------------------------------------
 //                      Funções etapa 3 

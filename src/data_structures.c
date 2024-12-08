@@ -4,6 +4,7 @@
 #include "data_structures.h"
 #include "erros.h"
 #define ARQUIVO_SAIDA "saida.dot"
+int contador_global = 0;
 
 
 // -------------------------------------------
@@ -80,6 +81,44 @@ conteudo_tabela_simbolos_t *busca_entrada_pilha(pilha_tabelas_t *pilha, const ch
   return NULL;
 }
 
+/*
+ * Função printa_pilha_tabelas, DEBUG.
+ */
+void printa_pilha_tabelas(pilha_tabelas_t *pilha) {
+    if (pilha == NULL) {
+        printf("A pilha está vazia.\n");
+        return;
+    }
+
+    int nivel = 0; // Para indicar o nível da tabela na pilha
+    while (pilha != NULL) {
+        printf("Tabela no nível %d:\n", nivel);
+        tabela_simbolos_t *tabela = pilha->tabela_simbolos;
+
+        if (tabela == NULL || tabela->entradas == NULL || tabela->numero_de_entradas == 0) {
+            printf("  (Tabela vazia)\n");
+        } else {
+            for (int i = 0; i < tabela->numero_de_entradas; i++) {
+                conteudo_tabela_simbolos_t *entrada = tabela->entradas[i];
+                if (entrada != NULL) {
+                    printf("  Entrada %d:\n", i);
+                    printf("    Linha: %d\n", entrada->linha);
+                    printf("    Deslocamento: %d\n", entrada->deslocamento);
+                    printf("    Natureza: %s\n", entrada->natureza);
+                    printf("    Tipo: %s\n", entrada->tipo);
+                    printf("    Valor: %s\n", entrada->valor);
+                } else {
+                    printf("  Entrada %d: (nula)\n", i);
+                }
+            }
+        }
+
+        // Passa para o próximo nível da pilha
+        pilha = pilha->prox;
+        nivel++;
+    }
+}
+
 
 // -------------------------------------------
 //            Funções Tabela de símbolos
@@ -140,18 +179,87 @@ void atribui_tipo (tabela_simbolos_t *tabela, char *tipo) {
 
 
 void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *entrada) {
-  if (tabela != NULL && entrada != NULL) {
+    if (tabela != NULL && entrada != NULL) {
         conteudo_tabela_simbolos_t *ret = busca_entrada_tabela(tabela, entrada->valor);
         if (ret != NULL) {
             printa_erro(ERR_DECLARED, entrada->valor, entrada->linha, ret->linha);
+            return;
         }
+
+        if (strcmp(entrada->tipo, "ATRIBUIR DEPOIS") == 0) {
+            entrada->deslocamento = -1; 
+        } else {
+            if (tabela->numero_de_entradas == 0) {
+                entrada->deslocamento = 0; 
+            } else {
+                conteudo_tabela_simbolos_t *ultima_entrada = tabela->entradas[tabela->numero_de_entradas - 1];
+                if (ultima_entrada->deslocamento == -1) {
+                    entrada->deslocamento = -1; 
+                } else if (strcmp(ultima_entrada->tipo, "INT") == 0) {
+                    entrada->deslocamento = ultima_entrada->deslocamento + 4;
+                } else if (strcmp(ultima_entrada->tipo, "FLOAT") == 0) {
+                    entrada->deslocamento = ultima_entrada->deslocamento + 6;
+                } else {
+                    fprintf(stderr, "Erro: tipo desconhecido '%s'.\n", ultima_entrada->tipo);
+                    entrada->deslocamento = -1; 
+                }
+            }
+        }
+        
         tabela->numero_de_entradas++;
-        tabela->entradas = realloc(tabela->entradas, tabela->numero_de_entradas * sizeof(conteudo_tabela_simbolos_t *));   
-        tabela->entradas[tabela->numero_de_entradas-1] = entrada;
+        tabela->entradas = realloc(tabela->entradas, tabela->numero_de_entradas * sizeof(conteudo_tabela_simbolos_t *));
+        if (tabela->entradas == NULL) {
+            fprintf(stderr, "Erro: falha ao realocar memória para as entradas da tabela.\n");
+            return;
+        }
+        tabela->entradas[tabela->numero_de_entradas - 1] = entrada;
+
+        if (entrada->deslocamento == -1) {
+            for (int i = 0; i < tabela->numero_de_entradas; i++) {
+                tabela->entradas[i]->deslocamento = -1;
+            }
+        }
     } else {
-        printf("Erro: %s recebeu parâmetro tabela = %p / entrada = %p.\n", __FUNCTION__, tabela, entrada);
+        fprintf(stderr, "Erro: %s recebeu parâmetros inválidos. tabela = %p, entrada = %p\n", __FUNCTION__, tabela, entrada);
     }
 }
+
+void calcula_deslocamentos(tabela_simbolos_t *tabela) {
+    if (tabela == NULL || tabela->entradas == NULL) {
+        fprintf(stderr, "Erro: tabela inválida em %s.\n", __FUNCTION__);
+        return;
+    }
+
+    int deslocamento_atual = 0;
+
+    for (int i = 0; i < tabela->numero_de_entradas; i++) {
+        conteudo_tabela_simbolos_t *entrada = tabela->entradas[i];
+
+        if (entrada->deslocamento != -1) {
+            deslocamento_atual = entrada->deslocamento + 
+                                 (strcmp(entrada->tipo, "INT") == 0 ? 4 : 6);
+            continue;
+        }
+
+        if (strcmp(entrada->tipo, "INT") == 0) {
+            entrada->deslocamento = deslocamento_atual;
+            deslocamento_atual += 4;
+        } else if (strcmp(entrada->tipo, "FLOAT") == 0) {
+            entrada->deslocamento = deslocamento_atual;
+            deslocamento_atual += 6;
+        } else if (strcmp(entrada->tipo, "ATRIBUIR DEPOIS") == 0) {
+            fprintf(stderr, "Aviso: tipo ainda não definido para '%s' na linha %d. Deslocamento permanecerá indefinido.\n",
+                    entrada->valor, entrada->linha);
+            entrada->deslocamento = -1;
+            return; 
+        } else {
+            fprintf(stderr, "Erro: tipo desconhecido '%s' para '%s'.\n", entrada->tipo, entrada->valor);
+            entrada->deslocamento = -1;
+            return; 
+        }
+    }
+}
+
 
 
 void destroi_tabela_simbolos(tabela_simbolos_t *tabela)
@@ -228,6 +336,136 @@ asd_tree_t *cria_tipo(const char *tipo)
   return ret;
 }
 
+// -------------------------------------------
+//            Funções etapa 5
+// -------------------------------------------
+
+char* gera_temp() {
+    // Buffer temporário para o número convertido
+    char buffer[20]; 
+    sprintf(buffer, "%d", contador_global); // Converte o número para string
+
+    // Calcula o tamanho total da string resultante
+    size_t tamanho = strlen(buffer) + strlen("t") + 1;
+
+    // Aloca memória para a nova string concatenada
+    char* resultado = malloc(tamanho);
+    if (resultado == NULL) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Concatena as strings
+    strcpy(resultado, "t"); // Copia "t"
+    strcat(resultado, buffer);    // Concatena o contador global
+    
+    contador_global++;
+
+    return resultado; // Retorna a string concatenada
+}
+
+char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* parametro3) {
+	// Inicializa a variável que vai guardar o tamanho total da instrução
+	size_t tamanho = strlen(instrucao);
+	    
+	// Adiciona os tamanhos dos parâmetros, mas apenas se não forem NULL
+	if (parametro1 != NULL) tamanho += strlen(parametro1);
+	if (parametro2 != NULL) tamanho += strlen(parametro2);
+	if (parametro3 != NULL) tamanho += strlen(parametro3);
+
+	// Inclui espaço extra para separadores e o terminador nulo
+	tamanho += 5;  // para separadores como "  ", ", ", " => ", etc.
+	tamanho += 1;  // para o '\0' de terminação
+	char* resultado = malloc(tamanho);
+	
+	if (resultado == NULL) {
+		fprintf(stderr, "Erro de alocação de memória.\n");
+		exit(EXIT_FAILURE);
+    	}
+    	
+    	if(parametro2 == NULL) {
+    		strcpy(resultado, instrucao);
+    		strcat(resultado, "  ");
+    		strcat(resultado, parametro1);
+    		strcat(resultado, " => ");
+    		strcat(resultado, parametro3);
+    		strcat(resultado, "\n");
+    	}
+    	
+    	else if(parametro1 == NULL) {
+    		strcpy(resultado, instrucao);
+    		strcat(resultado, "  ");
+    		strcat(resultado, parametro2);
+    		strcat(resultado, " => ");
+    		strcat(resultado, parametro3);
+    		strcat(resultado, "\n");
+    	}
+    	
+    	// adicionar condicionais para gerar os outros formatos de instruções
+    	
+    	else {
+    		strcpy(resultado, instrucao);
+    		strcat(resultado, "  ");
+    		strcat(resultado, parametro1);
+    		strcat(resultado, ", ");
+    		strcat(resultado, parametro2);
+    		strcat(resultado, " => ");
+    		strcat(resultado, parametro3);
+    		strcat(resultado, "\n");
+    	}
+    	
+    	return resultado;
+}
+
+char* concatena3(char* parametro1, char* parametro2, char* instr) {
+    // Verificar se algum parâmetro é NULL
+    if (parametro1 == NULL || parametro2 == NULL || instr == NULL) {
+        fprintf(stderr, "Erro: parâmetros inválidos.\n");
+        return NULL;
+    }
+
+    // Calcular o tamanho total necessário para armazenar as três strings mais o '\0'
+    size_t tamanho = strlen(parametro1) + strlen(parametro2) + strlen(instr) + 5;
+
+    // Alocar memória para o resultado
+    char* resultado = malloc(tamanho);
+    if (resultado == NULL) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Copiar as strings para o resultado
+    strcpy(resultado, parametro1);
+    strcat(resultado, parametro2);
+    strcat(resultado, instr);
+
+    return resultado;
+}
+
+char* concatena2(char* parametro1, char* instr) {
+    // Verificar se algum parâmetro é NULL
+    if (parametro1 == NULL || instr == NULL) {
+        fprintf(stderr, "Erro: parâmetros inválidos.\n");
+        return NULL;
+    }
+
+    // Calcular o tamanho total necessário para armazenar as três strings mais o '\0'
+    size_t tamanho = strlen(parametro1) + strlen(instr) + 5;
+
+    // Alocar memória para o resultado
+    char* resultado = malloc(tamanho);
+    if (resultado == NULL) {
+        fprintf(stderr, "Erro de alocação de memória.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Copiar as strings para o resultado
+    strcpy(resultado, parametro1);
+    strcat(resultado, instr);
+
+    return resultado;
+}
+
 
 // -------------------------------------------
 //            Funções etapa 3
@@ -254,6 +492,8 @@ asd_tree_t *asd_new(const char *label)
   if (ret != NULL){
     ret->tipo = NULL;
     ret->label = strdup(label);
+    ret->codigo = NULL;
+    ret->local = NULL;
     ret->number_of_children = 0;
     ret->children = NULL;
   }
@@ -269,6 +509,8 @@ void asd_free(asd_tree_t *tree)
     }
     free(tree->children);
     free(tree->label);
+    free(tree->codigo);
+    free(tree->local);
     free(tree);
   }else{
     printf("Erro: %s recebeu parâmetro tree = %p.\n", __FUNCTION__, tree);
