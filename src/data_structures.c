@@ -67,10 +67,14 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
 		exit(EXIT_FAILURE);
     	}
     	
-      if (parametro2 == NULL) {
+      if (parametro2 == NULL && parametro1 != NULL) {
         snprintf(resultado, tamanho, "%s  %s => %s\n", instrucao, parametro1, parametro3);
-      } else if (parametro1 == NULL) {
+      }
+      else if (parametro1 == NULL && parametro2 != NULL) {
         snprintf(resultado, tamanho, "%s  %s => %s\n", instrucao, parametro2, parametro3);
+      }
+      else if (parametro1 == NULL && parametro2 == NULL) {
+        snprintf(resultado, tamanho, "%s => %s\n", instrucao, parametro3);
       }
     	
     	// adicionar condicionais para gerar os outros formatos de instruções
