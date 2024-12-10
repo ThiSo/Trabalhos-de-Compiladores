@@ -12,6 +12,171 @@ int contador_label_global = 0;
 //            Funções etapa 5
 // -------------------------------------------
 
+
+ret_instr_t gera_codigo_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas)
+{
+  ret_instr_t retorno;
+  retorno.temporario  = gera_temp();
+
+  if (strcmp(identificador->tipo_token, "IDENTIFICADOR") == 0) {
+    char buffer[20]; 
+    sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, identificador->valor)->deslocamento); 
+    retorno.codigo = cria_instrucao("loadAI", "rfp", buffer, retorno.temporario);
+  } else {
+    retorno.codigo  = cria_instrucao("loadI", identificador->valor, NULL, retorno.temporario);
+  }
+
+  return retorno;
+}
+
+
+ret_instr_t gera_codigo_atribuicao(valor_lexico_t *identificador, asd_tree_t *f1, pilha_tabelas_t *pilha_tabelas)
+{
+  char buffer[20]; 
+  sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, identificador->valor)->deslocamento);
+  char* instr_store = cria_instrucao("storeAI", f1->local, "rfp", buffer);
+  
+  ret_instr_t retorno;
+  retorno.codigo = concatena2(f1->codigo, instr_store);
+
+  return retorno;
+}
+
+
+ret_instr_t gera_codigo_exp_un(char* mneumonico, asd_tree_t *f1) 
+{
+  if (strcmp(mneumonico, "!") == 0){
+    char *zero = gera_temp();
+    char *temporario = gera_temp();
+    char *resultado = gera_temp();
+    char *label_true = gera_label();
+    char *label_false = gera_label();
+    char *label_prox = gera_label();
+    char *instr_loadI = cria_instrucao("loadI", "0", NULL, zero);
+    char *instr_EQ = cria_instrucao("cmp_EQ", f1->local, zero, temporario);
+    char *instr_cbr = cria_instrucao("cbr", temporario, label_true, label_false);
+    char *atribui_zero = cria_instrucao("loadI", "0", NULL, resultado);
+    char *atribui_um = cria_instrucao("loadI", "1", NULL, resultado);
+    char *instr_jump = cria_instrucao("jumpI", NULL, NULL, label_prox);
+    
+    ret_instr_t retorno;
+    retorno.codigo = concatena2(f1->codigo, instr_loadI);
+    retorno.codigo  = concatena2(retorno.codigo , instr_EQ);
+    retorno.codigo  = concatena2(retorno.codigo , instr_cbr);
+    retorno.codigo  = concatena3(retorno.codigo , label_true, ":");
+    retorno.codigo  = concatena2(retorno.codigo , "\n");
+    retorno.codigo  = concatena2(retorno.codigo , atribui_um);
+    retorno.codigo  = concatena2(retorno.codigo , instr_jump);
+    retorno.codigo  = concatena3(retorno.codigo , label_false, ":");
+    retorno.codigo  = concatena2(retorno.codigo , "\n");
+    retorno.codigo  = concatena2(retorno.codigo , atribui_zero);
+    retorno.codigo  = concatena3(retorno.codigo , label_prox, ":");
+    retorno.codigo  = concatena2(retorno.codigo , "\n");
+
+    retorno.temporario = resultado;
+
+    return retorno;
+  } else {
+    char *temporario_neg = gera_temp();
+    char* instr_neg = cria_instrucao("multI", f1->local, "-1", temporario_neg);
+
+    ret_instr_t retorno;
+    retorno.codigo = concatena2(f1->codigo, instr_neg);
+
+    retorno.temporario = temporario_neg;
+
+    return retorno;
+  }
+}
+
+
+ret_instr_t gera_codigo_exp_bin(char* mneumonico, asd_tree_t *f1, asd_tree_t *f2) 
+{
+  char *temporario = gera_temp();
+  char* instr = cria_instrucao(mneumonico, f1->local, f2->local, temporario);
+  ret_instr_t retorno;
+  retorno.codigo = concatena3(f1->codigo, f2->codigo, instr);
+  retorno.temporario = temporario;
+
+  return retorno;
+}
+
+
+ret_instr_t gera_codigo_if(asd_tree_t *f1, asd_tree_t *f2)
+{
+  char *temporario = gera_temp();
+  char *label_true = gera_label();
+  char *label_false = gera_label();
+  char* instr_if = cria_instrucao("cbr", f1->local, label_true, label_false);
+  
+  ret_instr_t retorno;
+  retorno.codigo  = concatena2(f1->codigo, instr_if);
+  retorno.codigo  = concatena3(retorno.codigo , label_true, ":");
+  retorno.codigo  = concatena2(retorno.codigo , "\n");
+  retorno.codigo  = concatena2(retorno.codigo , f2->codigo);
+  retorno.codigo  = concatena3(retorno.codigo , label_false, ":");
+  retorno.codigo  = concatena2(retorno.codigo , "\n");
+
+  retorno.temporario = temporario;
+
+  return retorno;
+}
+
+
+ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3)
+{
+  char *temporario = gera_temp();
+  char *label_true = gera_label();
+  char *label_false = gera_label();
+  char *label_prox = gera_label();
+  char* instr_if = cria_instrucao("cbr", f1->local, label_true, label_false);
+  char* instr_jump = cria_instrucao("jumpI", NULL, NULL, label_prox);
+  
+  ret_instr_t retorno;
+  retorno.codigo = concatena2(f1->codigo, instr_if);
+  retorno.codigo  = concatena3(retorno.codigo, label_true, ":");
+  retorno.codigo  = concatena2(retorno.codigo, "\n");
+  retorno.codigo  = concatena2(retorno.codigo, f2->codigo);
+  retorno.codigo  = concatena2(retorno.codigo, instr_jump);
+  retorno.codigo  = concatena3(retorno.codigo, label_false, ":");
+  retorno.codigo  = concatena2(retorno.codigo, "\n");
+  retorno.codigo  = concatena2(retorno.codigo, f3->codigo);
+  retorno.codigo  = concatena3(retorno.codigo, label_prox, ":");
+  retorno.codigo  = concatena2(retorno.codigo, "\n");
+
+  retorno.temporario = temporario;
+
+  return retorno;
+}
+
+
+ret_instr_t gera_codigo_while(asd_tree_t *f1, asd_tree_t *f2)
+{
+  char *temporario = gera_temp();
+  char *label_inicio = gera_label();
+  char *label_true = gera_label();
+  char *label_false = gera_label();
+  char *instr_while = cria_instrucao("cbr", f1->local, label_true, label_false);
+  char* instr_jump = cria_instrucao("jumpI", NULL, NULL, label_inicio);
+  
+  ret_instr_t retorno;
+  retorno.codigo = concatena2(label_inicio, ":");
+  retorno.codigo = concatena2(retorno.codigo, "\n");
+  retorno.codigo = concatena2(retorno.codigo, f1->codigo);
+  retorno.codigo = concatena2(retorno.codigo, instr_while);
+  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
+  retorno.codigo = concatena2(retorno.codigo, "\n");
+  retorno.codigo = concatena2(retorno.codigo, f2->codigo);
+  retorno.codigo = concatena2(retorno.codigo, instr_jump);
+  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
+  retorno.codigo = concatena2(retorno.codigo, "\n");
+
+  retorno.temporario = temporario;
+
+  return retorno;
+}
+
+
 char* gera_temp() {
     char buffer[20]; 
     sprintf(buffer, "%d", contador_temp_global);
@@ -32,6 +197,7 @@ char* gera_temp() {
     return resultado;
 }
 
+
 char* gera_label() {
     char buffer[20]; 
     sprintf(buffer, "%d", contador_label_global);
@@ -51,6 +217,7 @@ char* gera_label() {
 
     return resultado;
 }
+
 
 char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* parametro3) {
 	size_t tamanho = strlen(instrucao);
@@ -73,22 +240,30 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
       else if (parametro1 == NULL && parametro2 != NULL) {
         snprintf(resultado, tamanho, "%s  %s => %s\n", instrucao, parametro2, parametro3);
       }
-      else if (parametro1 == NULL && parametro2 == NULL) {
+      else if (parametro1 == NULL && parametro2 == NULL && strcmp(instrucao, "jumpI") != 0) {
         snprintf(resultado, tamanho, "%s => %s\n", instrucao, parametro3);
+      }
+      else if (parametro1 == NULL && parametro2 == NULL && strcmp(instrucao, "jumpI") == 0) {
+        snprintf(resultado, tamanho, "%s -> %s\n", instrucao, parametro3);
       }
     	
     	// adicionar condicionais para gerar os outros formatos de instruções
     	else {
         if (strcmp(instrucao, "storeAI") == 0 || strcmp(instrucao, "storeA0") == 0 || 
-            strcmp(instrucao, "cstoreAI") == 0 || strcmp(instrucao, "cstoreA0") == 0 || strcmp(instrucao, "cbr") == 0){
+            strcmp(instrucao, "cstoreAI") == 0 || strcmp(instrucao, "cstoreA0") == 0){
             snprintf(resultado, tamanho, "%s  %s => %s, %s\n", instrucao, parametro1, parametro2, parametro3);
-        } else {
-            snprintf(resultado, tamanho, "%s  %s, %s => %s\n", instrucao, parametro1, parametro2, parametro3);
+        } 
+        else if(strcmp(instrucao, "cbr") == 0) {
+            snprintf(resultado, tamanho, "%s  %s -> %s, %s\n", instrucao, parametro1, parametro2, parametro3);
         }
+        else {
+            snprintf(resultado, tamanho, "%s  %s, %s => %s\n", instrucao, parametro1, parametro2, parametro3);
+          }
     	}
     	
     	return resultado;
 }
+
 
 char* concatena3(char* parametro1, char* parametro2, char* instr) {
     // Verificar se algum parâmetro é NULL
@@ -122,6 +297,7 @@ char* concatena3(char* parametro1, char* parametro2, char* instr) {
 
     return resultado;
 }
+
 
 char* concatena2(char* parametro1, char* instr) {
     // Verificar se algum parâmetro é NULL

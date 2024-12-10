@@ -42,9 +42,22 @@ typedef struct pilha {
 } pilha_tabelas_t;
 
 
+typedef struct {
+    char *codigo;
+    char *temporario;
+  } ret_instr_t;
+
 // ----------------------------------------------------------
 //                      Funções pilha 
 // ----------------------------------------------------------
+
+ret_instr_t gera_codigo_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas);
+ret_instr_t gera_codigo_atribuicao(valor_lexico_t *identificador, asd_tree_t *f1, pilha_tabelas_t *pilha_tabelas);
+ret_instr_t gera_codigo_exp_un(char* mneumonico, asd_tree_t *f1);
+ret_instr_t gera_codigo_exp_bin(char* mneumonico, asd_tree_t *f1, asd_tree_t *f2);
+ret_instr_t gera_codigo_if(asd_tree_t *f1, asd_tree_t *f2);
+ret_instr_t gera_codigo_while(asd_tree_t *f1, asd_tree_t *f2);
+ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3);
 
 /*
  * Função cria_pilha, cria uma pilha vazia.

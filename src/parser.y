@@ -314,20 +314,9 @@ ifs: TK_PR_IF '(' expressao ')' bloco_comandos {
   if($5 != NULL) 
     asd_add_child($$, $5);
 
-  char *temporario = gera_temp();
-  $$->t = gera_label();
-  $$->f = gera_label();
-  char* instr_if = cria_instrucao("cbr", $3->local, $$->t, $$->f);
-  
-  $$->codigo = concatena2($3->codigo, instr_if);
-  $$->codigo = concatena3($$->codigo, $$->t, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->codigo = concatena2($$->codigo, $5->codigo);
-  $$->codigo = concatena3($$->codigo, $$->f, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->local = temporario;
-
-  //printf("%s\n", $$->codigo);
+  ret_instr_t ret = gera_codigo_if($3, $5);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 }
 
    | TK_PR_IF '(' expressao ')' bloco_comandos TK_PR_ELSE bloco_comandos { 
@@ -338,27 +327,9 @@ ifs: TK_PR_IF '(' expressao ')' bloco_comandos {
   if($7 != NULL) 
     asd_add_child($$, $7); 
 
-  char *temporario = gera_temp();
-  $$->t = gera_label();
-  $$->f = gera_label();
-  char *label_prox = gera_label();
-  char* instr_if = cria_instrucao("cbr", $3->local, $$->t, $$->f);
-  char* instr_jump = cria_instrucao("jumpI", NULL, NULL, label_prox);
-  
-  $$->codigo = concatena2($3->codigo, instr_if);
-  $$->codigo = concatena3($$->codigo, $$->t, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->codigo = concatena2($$->codigo, $5->codigo);
-  $$->codigo = concatena2($$->codigo, instr_jump);
-  $$->codigo = concatena3($$->codigo, $$->f, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->codigo = concatena2($$->codigo, $7->codigo);
-  $$->codigo = concatena3($$->codigo, label_prox, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  
-  $$->local = temporario;
-
-  //printf("%s\n", $$->codigo);
+  ret_instr_t ret = gera_codigo_if_else($3, $5, $7);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };                        
 
 whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos { 
@@ -366,29 +337,10 @@ whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos {
   asd_add_child($$,$3);
   if($5 != NULL)
     asd_add_child($$, $5); 
-
-  // etapa 5
-  //
   
-  char *temporario = gera_temp();
-  char *label_inicio = gera_label();
-  $$->t = gera_label();
-  $$->f = gera_label();
-  char *instr_while = cria_instrucao("cbr", $3->local, $$->t, $$->f);
-  char* instr_jump = cria_instrucao("jumpI", NULL, NULL, label_inicio);
-  
-  $$->codigo = concatena2(label_inicio, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->codigo = concatena2($$->codigo, $3->codigo);
-  $$->codigo = concatena2($$->codigo, instr_while);
-  $$->codigo = concatena3($$->codigo, $$->t, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->codigo = concatena2($$->codigo, $5->codigo);
-  $$->codigo = concatena2($$->codigo, instr_jump);
-  $$->codigo = concatena3($$->codigo, $$->f, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  
-  
+  ret_instr_t ret = gera_codigo_while($3, $5);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };                                            
 
 // --------------------------------------------------------------
@@ -396,16 +348,8 @@ whiles: TK_PR_WHILE '(' expressao ')' bloco_comandos {
 atribuicao: TK_IDENTIFICADOR '=' expressao { 
   $$ = processa_atribuicao($1, $3, pilha_tabelas);
 
-  // illoc_t *instr_store = NULL, *instr_add = NULL;
-  // char* temp = gera_temp();
-  // instr_add = cria_instrucao("add", "rfp", checa_id.deslocamento, temp);
-
-  char buffer[20]; 
-  sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, $1->valor)->deslocamento);
-  char* instr_store = cria_instrucao("storeAI", $3->local, "rfp", buffer);
-  
-  $$->codigo = concatena2($3->codigo, instr_store);
-  //printf("%s\n", $$->codigo);
+  ret_instr_t ret = gera_codigo_atribuicao($1, $3, pilha_tabelas);
+  $$->codigo = ret.codigo;
 };                                     
 
 
@@ -426,10 +370,9 @@ lista_argumentos: expressao {
 expressao: expressao TK_OC_OR prec6 { 
   $$ = cria_nodo_expressao("|", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_or = cria_instrucao("or", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_or);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("or", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
@@ -441,10 +384,9 @@ expressao: prec6 {
 prec6: prec6 TK_OC_AND prec5 { 
   $$ = cria_nodo_expressao("&", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_and = cria_instrucao("and", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_and);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("and", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 }; 
 
 
@@ -456,20 +398,18 @@ prec6: prec5 {
 prec5: prec5 TK_OC_EQ prec4 { 
   $$ = cria_nodo_expressao("==", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_EQ = cria_instrucao("cmp_EQ", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_EQ);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("cmp_EQ", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
 prec5: prec5 TK_OC_NE prec4 { 
   $$ = cria_nodo_expressao("!=", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_NE = cria_instrucao("cmp_NE", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_NE);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("cmp_NE", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
@@ -481,40 +421,36 @@ prec5: prec4 {
 prec4: prec4 '<' prec3 { 
   $$ = cria_nodo_expressao("<", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_LT = cria_instrucao("cmp_LT", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_LT);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("cmp_LT", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
 prec4: prec4 '>' prec3 { 
   $$ = cria_nodo_expressao(">", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_GT = cria_instrucao("cmp_GT", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_GT);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("cmp_GT", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
 prec4: prec4 TK_OC_LE prec3 { 
   $$ = cria_nodo_expressao("<=", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_LE = cria_instrucao("cmp_LE", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_LE);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("cmp_LE", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
 prec4: prec4 TK_OC_GE prec3 { 
   $$ = cria_nodo_expressao(">=", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_GE = cria_instrucao("cmp_GE", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_GE);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("cmp_GE", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
@@ -526,22 +462,18 @@ prec4: prec3 {
 prec3: prec3 '+' prec2 { 
   $$ = cria_nodo_expressao("+", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_add = cria_instrucao("add", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_add);
-  $$->local = temporario;
-  //printf("%s\n", $$->codigo);
+  ret_instr_t ret = gera_codigo_exp_bin("add", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
 prec3: prec3 '-' prec2 { 
   $$ = cria_nodo_expressao("-", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_sub = cria_instrucao("sub", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_sub);
-  $$->local = temporario;
-  //printf("%s\n", $$->codigo); 
+  ret_instr_t ret = gera_codigo_exp_bin("sub", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
@@ -553,43 +485,18 @@ prec3: prec2 {
 prec2: prec2 '*' prec1 { 
   $$ = cria_nodo_expressao("*", $1, $3);
 
-  // etapa 5:
-  //
-  char *temporario = gera_temp();
-  char* instr_mult = cria_instrucao("mult", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_mult);
-  $$->local = temporario;
-
-  // exemplo transformando em funcao: 
-  // 
-  // typedef struct {
-  //    lista_instr_t *lista;
-  //    temp_t *temporario;
-  // } retorno_engsoft_t;
-  //
-  // retorno_engsoft_t gera_codigo_de_exp_bin(char* mneumonico, asd_tree_t f1, asd_tree_t f2) 
-  // {
-  //    temp_t temporario = gera_temp();
-  //    illoc_t instr = cria_instrucao(mneumonico, f1.local, f2.local, temporario);
-  //    retorno_engsoft_t retorno = {instr, temporario};
-  //
-  //    return retorno;
-  // }
-  //
-  // retorno_engsoft_t retorno; 
-  // retorno = gera_codigo_de_exp_bin("mult", $1, $3);
-  // $$.codigo = retorno.codigo;
-  // $$.local = retorno.temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("mult", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
 prec2: prec2 '/' prec1 { 
   $$ = cria_nodo_expressao("/", $1, $3);
   
-  char *temporario = gera_temp();
-  char* instr_div = cria_instrucao("div", $1->local, $3->local, temporario);
-  $$->codigo = concatena3($1->codigo, $3->codigo, instr_div);
-  $$->local = temporario;
+  ret_instr_t ret = gera_codigo_exp_bin("div", $1, $3);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
@@ -606,43 +513,16 @@ prec2: prec1 {
 prec1:'!' prec1 { 
   $$ = cria_nodo_expressao_unaria("!", $2);
 
-  // TODO
-  char *zero = gera_temp();
-  char *temporario = gera_temp();
-  char *resultado = gera_temp();
-  char *label_true = gera_label();
-  char *label_false = gera_label();
-  char *label_prox = gera_label();
-  char *instr_loadI = cria_instrucao("loadI", "0", NULL, zero);
-  char *instr_EQ = cria_instrucao("cmp_EQ", $2->local, zero, temporario);
-  char *instr_cbr = cria_instrucao("cbr", temporario, label_true, label_false);
-  char *atribui_zero = cria_instrucao("loadI", "0", NULL, resultado);
-  char *atribui_um = cria_instrucao("loadI", "1", NULL, resultado);
-  char *instr_jump = cria_instrucao("jump", NULL, NULL, label_prox);
-  
-  $$->codigo = concatena2($2->codigo, instr_loadI);
-  $$->codigo = concatena2($$->codigo, instr_EQ);
-  $$->codigo = concatena2($$->codigo, instr_cbr);
-  $$->codigo = concatena3($$->codigo, label_true, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->codigo = concatena2($$->codigo, atribui_um);
-  $$->codigo = concatena2($$->codigo, instr_jump);
-  $$->codigo = concatena3($$->codigo, label_false, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  $$->codigo = concatena2($$->codigo, atribui_zero);
-  $$->codigo = concatena3($$->codigo, label_prox, ":");
-  $$->codigo = concatena2($$->codigo, "\n");
-  
-  $$->local = resultado;
+  ret_instr_t ret = gera_codigo_exp_un("!", $2);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 }
     | '-' prec1 { 
   $$ = cria_nodo_expressao_unaria("-", $2);
 
-  char *temporario_neg = gera_temp();
-  char* instr_neg = cria_instrucao("multI", $2->local, "-1", temporario_neg);
-
-  $$->codigo = concatena2($2->codigo, instr_neg);
-  $$->local = temporario_neg;
+  ret_instr_t ret = gera_codigo_exp_un("-", $2);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
 
@@ -654,18 +534,18 @@ prec1: '(' expressao ')' {
 prec1:TK_IDENTIFICADOR { 
   $$ = processa_expressao($1, pilha_tabelas);
 
-  $$->local  = gera_temp();
-  char buffer[20]; 
-  sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, $1->valor)->deslocamento); 
-  $$->codigo = cria_instrucao("loadAI", "rfp", buffer, $$->local);
+  ret_instr_t ret = gera_codigo_expressao($1, pilha_tabelas);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 };
 
     | TK_LIT_INT { 
   $$ = asd_new($1->valor); 
   $$->tipo = strdup("INT"); 
 
-  $$->local  = gera_temp();
-  $$->codigo = cria_instrucao("loadI", $1->valor, NULL, $$->local);
+  ret_instr_t ret = gera_codigo_expressao($1, pilha_tabelas);
+  $$->codigo = ret.codigo;
+  $$->local = ret.temporario;
 }
 
     | TK_LIT_FLOAT { 
