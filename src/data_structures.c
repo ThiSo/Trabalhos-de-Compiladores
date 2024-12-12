@@ -12,6 +12,17 @@ int contador_label_global = 0;
 //            Funções etapa 5
 // -------------------------------------------
 
+ret_instr_t gera_codigo(asd_tree_t *f1, asd_tree_t *f2) {
+  ret_instr_t retorno;
+  
+  if (f1 == NULL)
+    retorno.codigo = concatena2(cria_instrucao("nop", NULL, NULL, NULL), f2->codigo);
+  else
+    retorno.codigo = concatena2(f1->codigo, f2->codigo);  // Essa linha realiza a concatenação de multiplos comandos
+    
+  return retorno;
+}
+
 
 ret_instr_t gera_codigo_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas)
 {
@@ -104,22 +115,37 @@ ret_instr_t gera_codigo_exp_bin(char* mneumonico, asd_tree_t *f1, asd_tree_t *f2
 
 ret_instr_t gera_codigo_if(asd_tree_t *f1, asd_tree_t *f2)
 {
-  char *temporario = gera_temp();
-  char *label_true = gera_label();
-  char *label_false = gera_label();
-  char* instr_if = cria_instrucao("cbr", f1->local, label_true, label_false);
-  
-  ret_instr_t retorno;
-  retorno.codigo  = concatena2(f1->codigo, instr_if);
-  retorno.codigo  = concatena3(retorno.codigo , label_true, ":");
-  retorno.codigo  = concatena2(retorno.codigo , "\n");
-  retorno.codigo  = concatena2(retorno.codigo , f2->codigo);
-  retorno.codigo  = concatena3(retorno.codigo , label_false, ":");
-  retorno.codigo  = concatena2(retorno.codigo , "\n");
+	ret_instr_t retorno;
+	char *temporario = gera_temp();
+	char *label_true = gera_label();
+	char *label_false = gera_label();
+	char* instr_if = cria_instrucao("cbr", f1->local, label_true, label_false);
+	char* instr_nop = cria_instrucao("nop", NULL, NULL, NULL);
+	
+	if(f2 != NULL) {
+	  retorno.codigo = concatena2(f1->codigo, instr_if);
+	  retorno.codigo = concatena3(retorno.codigo , label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo , "\n");
+	  retorno.codigo = concatena2(retorno.codigo , f2->codigo);
+	  retorno.codigo = concatena3(retorno.codigo , label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo , "\n");
 
-  retorno.temporario = temporario;
+	  retorno.temporario = temporario;
 
-  return retorno;
+	  return retorno;
+	}
+	else {
+	  retorno.codigo = concatena2(f1->codigo, instr_if);
+	  retorno.codigo = concatena3(retorno.codigo , label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo , "\n");
+	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
+	  retorno.codigo = concatena3(retorno.codigo , label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo , "\n");
+
+	  retorno.temporario = temporario;
+	  
+	  return retorno;
+	}
 }
 
 
@@ -131,22 +157,73 @@ ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3)
   char *label_prox = gera_label();
   char* instr_if = cria_instrucao("cbr", f1->local, label_true, label_false);
   char* instr_jump = cria_instrucao("jumpI", NULL, NULL, label_prox);
-  
+  char* instr_nop = cria_instrucao("nop", NULL, NULL, NULL);
   ret_instr_t retorno;
-  retorno.codigo = concatena2(f1->codigo, instr_if);
-  retorno.codigo  = concatena3(retorno.codigo, label_true, ":");
-  retorno.codigo  = concatena2(retorno.codigo, "\n");
-  retorno.codigo  = concatena2(retorno.codigo, f2->codigo);
-  retorno.codigo  = concatena2(retorno.codigo, instr_jump);
-  retorno.codigo  = concatena3(retorno.codigo, label_false, ":");
-  retorno.codigo  = concatena2(retorno.codigo, "\n");
-  retorno.codigo  = concatena2(retorno.codigo, f3->codigo);
-  retorno.codigo  = concatena3(retorno.codigo, label_prox, ":");
-  retorno.codigo  = concatena2(retorno.codigo, "\n");
+  
+  if(f2 != NULL && f3 != NULL) {
+	  retorno.codigo = concatena2(f1->codigo, instr_if);
+	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo, f2->codigo);
+	  retorno.codigo = concatena2(retorno.codigo, instr_jump);
+	  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo, f3->codigo);
+	  retorno.codigo = concatena3(retorno.codigo, label_prox, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
 
-  retorno.temporario = temporario;
+	  retorno.temporario = temporario;
 
-  return retorno;
+	  return retorno;
+  }
+  else if(f2 == NULL && f3 != NULL) {
+  	  retorno.codigo = concatena2(f1->codigo, instr_if);
+	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
+	  retorno.codigo = concatena2(retorno.codigo, instr_jump);
+	  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo, f3->codigo);
+	  retorno.codigo = concatena3(retorno.codigo, label_prox, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+
+	  retorno.temporario = temporario;
+
+	  return retorno;
+  }
+  else if(f2 != NULL && f3 == NULL) {
+  	  retorno.codigo = concatena2(f1->codigo, instr_if);
+	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo, f2->codigo);
+	  retorno.codigo = concatena2(retorno.codigo, instr_jump);
+	  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
+	  retorno.codigo = concatena3(retorno.codigo, label_prox, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+
+	  retorno.temporario = temporario;
+
+	  return retorno;
+  }
+  else {
+  	  retorno.codigo = concatena2(f1->codigo, instr_if);
+	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
+	  retorno.codigo = concatena2(retorno.codigo, instr_jump);
+	  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
+	  retorno.codigo = concatena3(retorno.codigo, label_prox, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+
+	  retorno.temporario = temporario;
+
+	  return retorno;
+  }
 }
 
 
@@ -158,22 +235,41 @@ ret_instr_t gera_codigo_while(asd_tree_t *f1, asd_tree_t *f2)
   char *label_false = gera_label();
   char *instr_while = cria_instrucao("cbr", f1->local, label_true, label_false);
   char* instr_jump = cria_instrucao("jumpI", NULL, NULL, label_inicio);
-  
+  char* instr_nop = cria_instrucao("nop", NULL, NULL, NULL);
   ret_instr_t retorno;
-  retorno.codigo = concatena2(label_inicio, ":");
-  retorno.codigo = concatena2(retorno.codigo, "\n");
-  retorno.codigo = concatena2(retorno.codigo, f1->codigo);
-  retorno.codigo = concatena2(retorno.codigo, instr_while);
-  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
-  retorno.codigo = concatena2(retorno.codigo, "\n");
-  retorno.codigo = concatena2(retorno.codigo, f2->codigo);
-  retorno.codigo = concatena2(retorno.codigo, instr_jump);
-  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
-  retorno.codigo = concatena2(retorno.codigo, "\n");
+  
+  if(f2 != NULL) {
+	  retorno.codigo = concatena2(label_inicio, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo, f1->codigo);
+	  retorno.codigo = concatena2(retorno.codigo, instr_while);
+	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo, f2->codigo);
+	  retorno.codigo = concatena2(retorno.codigo, instr_jump);
+	  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
 
-  retorno.temporario = temporario;
+	  retorno.temporario = temporario;
 
-  return retorno;
+	  return retorno;
+  }
+  else {
+  	  retorno.codigo = concatena2(label_inicio, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo, f1->codigo);
+	  retorno.codigo = concatena2(retorno.codigo, instr_while);
+	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
+	  retorno.codigo = concatena2(retorno.codigo, instr_jump);
+	  retorno.codigo = concatena3(retorno.codigo, label_false, ":");
+	  retorno.codigo = concatena2(retorno.codigo, "\n");
+
+	  retorno.temporario = temporario;
+
+	  return retorno;
+  }
 }
 
 
@@ -240,11 +336,14 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
       else if (parametro1 == NULL && parametro2 != NULL) {
         snprintf(resultado, tamanho, "%s  %s => %s\n", instrucao, parametro2, parametro3);
       }
-      else if (parametro1 == NULL && parametro2 == NULL && strcmp(instrucao, "jumpI") != 0) {
+      else if (parametro1 == NULL && parametro2 == NULL && strcmp(instrucao, "jumpI") != 0 && parametro3 != NULL) {
         snprintf(resultado, tamanho, "%s => %s\n", instrucao, parametro3);
       }
-      else if (parametro1 == NULL && parametro2 == NULL && strcmp(instrucao, "jumpI") == 0) {
+      else if (parametro1 == NULL && parametro2 == NULL && strcmp(instrucao, "jumpI") == 0 && parametro3 != NULL) {
         snprintf(resultado, tamanho, "%s -> %s\n", instrucao, parametro3);
+      }
+      else if (parametro1 == NULL && parametro2 == NULL && parametro3 == NULL){
+      	snprintf(resultado, tamanho, "%s\n", instrucao);
       }
     	
     	// adicionar condicionais para gerar os outros formatos de instruções

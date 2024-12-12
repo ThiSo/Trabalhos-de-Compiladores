@@ -51,14 +51,6 @@ typedef struct {
 //                      Funções pilha 
 // ----------------------------------------------------------
 
-ret_instr_t gera_codigo_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas);
-ret_instr_t gera_codigo_atribuicao(valor_lexico_t *identificador, asd_tree_t *f1, pilha_tabelas_t *pilha_tabelas);
-ret_instr_t gera_codigo_exp_un(char* mneumonico, asd_tree_t *f1);
-ret_instr_t gera_codigo_exp_bin(char* mneumonico, asd_tree_t *f1, asd_tree_t *f2);
-ret_instr_t gera_codigo_if(asd_tree_t *f1, asd_tree_t *f2);
-ret_instr_t gera_codigo_while(asd_tree_t *f1, asd_tree_t *f2);
-ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3);
-
 /*
  * Função cria_pilha, cria uma pilha vazia.
  */
@@ -164,6 +156,17 @@ char* cria_instrucao(char* instrucao, char* parametro1, char* parametro2, char* 
 char* concatena3(char* parametro1, char* parametro2, char* instr);
 
 char* concatena2(char* parametro1, char* instr);
+
+ret_instr_t gera_codigo(asd_tree_t *f1, asd_tree_t *f2);
+ret_instr_t gera_codigo_expressao(valor_lexico_t *identificador, pilha_tabelas_t *pilha_tabelas);
+ret_instr_t gera_codigo_atribuicao(valor_lexico_t *identificador, asd_tree_t *f1, pilha_tabelas_t *pilha_tabelas);
+ret_instr_t gera_codigo_exp_un(char* mneumonico, asd_tree_t *f1);
+ret_instr_t gera_codigo_exp_bin(char* mneumonico, asd_tree_t *f1, asd_tree_t *f2);
+ret_instr_t gera_codigo_if(asd_tree_t *f1, asd_tree_t *f2);
+ret_instr_t gera_codigo_while(asd_tree_t *f1, asd_tree_t *f2);
+ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3);
+
+int verificar_se_todos_sao_numeros(const char* valor);
 
 // ----------------------------------------------------------
 //                      Funções etapa 3 

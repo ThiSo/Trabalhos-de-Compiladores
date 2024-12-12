@@ -196,7 +196,7 @@ bloco_comandos_func: '{' lista_comandos '}' {
   $$ = $2;
 }
                    | '{' '}' { 
-  $$ = NULL; 
+  $$->codigo = cria_instrucao("nop", NULL, NULL, NULL);
 };
 
 
@@ -222,7 +222,9 @@ lista_comandos: comando {
     asd_add_child($$, $2);
   else if ($2 != NULL ) 
     $$ = $2;
-  $$->codigo = concatena2($1->codigo, $2->codigo);  // Essa linha realiza a concatenação de multiplos comandos
+    
+  ret_instr_t ret = gera_codigo($1, $2);
+  $$->codigo = ret.codigo;
 } 
               | declaracao_variavel ';' lista_comandos { 
   $$ = $1; 
