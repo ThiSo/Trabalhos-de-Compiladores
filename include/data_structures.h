@@ -41,6 +41,20 @@ typedef struct pilha {
     struct pilha *prox;
 } pilha_tabelas_t;
 
+/*
+typedef struct iloc {
+    char *mnemonico;
+    char *parametro1;
+    char *parametro2;
+    char *parametro3;
+} iloc_t;
+
+
+typedef struct lista_iloc {
+    int numero_de_instrucoes;
+    iloc_t **instrucoes;
+} lista_iloc_t;
+*/
 
 typedef struct {
     char *codigo;

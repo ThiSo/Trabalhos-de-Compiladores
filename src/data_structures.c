@@ -17,8 +17,10 @@ ret_instr_t gera_codigo(asd_tree_t *f1, asd_tree_t *f2) {
   
   if (f1 == NULL)
     retorno.codigo = concatena2(cria_instrucao("nop", NULL, NULL, NULL), f2->codigo);
+  else if (f2 == NULL)
+    retorno.codigo = f1->codigo;
   else
-    retorno.codigo = concatena2(f1->codigo, f2->codigo);  // Essa linha realiza a concatenação de multiplos comandos
+    retorno.codigo = concatena2(f1->codigo, f2->codigo);  // Essa linha realiza a concatenação de multiplos comandos  
     
   return retorno;
 }
@@ -31,7 +33,7 @@ ret_instr_t gera_codigo_expressao(valor_lexico_t *identificador, pilha_tabelas_t
 
   if (strcmp(identificador->tipo_token, "IDENTIFICADOR") == 0) {
     char buffer[20]; 
-    sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, identificador->valor)->deslocamento); 
+    sprintf(buffer, "%d", busca_entrada_pilha(pilha_tabelas, identificador->valor)->deslocamento); 
     retorno.codigo = cria_instrucao("loadAI", "rfp", buffer, retorno.temporario);
   } else {
     retorno.codigo  = cria_instrucao("loadI", identificador->valor, NULL, retorno.temporario);
@@ -44,7 +46,7 @@ ret_instr_t gera_codigo_expressao(valor_lexico_t *identificador, pilha_tabelas_t
 ret_instr_t gera_codigo_atribuicao(valor_lexico_t *identificador, asd_tree_t *f1, pilha_tabelas_t *pilha_tabelas)
 {
   char buffer[20]; 
-  sprintf(buffer, "%d", busca_entrada_tabela(pilha_tabelas->tabela_simbolos, identificador->valor)->deslocamento);
+  sprintf(buffer, "%d", busca_entrada_pilha(pilha_tabelas, identificador->valor)->deslocamento);
   char* instr_store = cria_instrucao("storeAI", f1->local, "rfp", buffer);
   
   ret_instr_t retorno;
@@ -71,7 +73,7 @@ ret_instr_t gera_codigo_exp_un(char* mneumonico, asd_tree_t *f1)
     char *instr_jump = cria_instrucao("jumpI", NULL, NULL, label_prox);
     
     ret_instr_t retorno;
-    retorno.codigo = concatena2(f1->codigo, instr_loadI);
+    retorno.codigo  = concatena2(f1->codigo, instr_loadI);
     retorno.codigo  = concatena2(retorno.codigo , instr_EQ);
     retorno.codigo  = concatena2(retorno.codigo , instr_cbr);
     retorno.codigo  = concatena3(retorno.codigo , label_true, ":");
@@ -177,7 +179,7 @@ ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3)
 	  return retorno;
   }
   else if(f2 == NULL && f3 != NULL) {
-  	  retorno.codigo = concatena2(f1->codigo, instr_if);
+  	retorno.codigo = concatena2(f1->codigo, instr_if);
 	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
 	  retorno.codigo = concatena2(retorno.codigo, "\n");
 	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
@@ -193,7 +195,7 @@ ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3)
 	  return retorno;
   }
   else if(f2 != NULL && f3 == NULL) {
-  	  retorno.codigo = concatena2(f1->codigo, instr_if);
+  	retorno.codigo = concatena2(f1->codigo, instr_if);
 	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
 	  retorno.codigo = concatena2(retorno.codigo, "\n");
 	  retorno.codigo = concatena2(retorno.codigo, f2->codigo);
@@ -209,7 +211,7 @@ ret_instr_t gera_codigo_if_else(asd_tree_t *f1, asd_tree_t *f2, asd_tree_t *f3)
 	  return retorno;
   }
   else {
-  	  retorno.codigo = concatena2(f1->codigo, instr_if);
+  	retorno.codigo = concatena2(f1->codigo, instr_if);
 	  retorno.codigo = concatena3(retorno.codigo, label_true, ":");
 	  retorno.codigo = concatena2(retorno.codigo, "\n");
 	  retorno.codigo = concatena2(retorno.codigo , instr_nop);
@@ -277,7 +279,7 @@ char* gera_temp() {
     char buffer[20]; 
     sprintf(buffer, "%d", contador_temp_global);
 
-    size_t tamanho = strlen(buffer) + strlen("t") + 1;
+    size_t tamanho = strlen(buffer) + strlen("r") + 1;
 
     char* resultado = malloc(tamanho);
     if (resultado == NULL) {
@@ -285,7 +287,7 @@ char* gera_temp() {
         exit(EXIT_FAILURE);
     }
 
-    strcpy(resultado, "t");
+    strcpy(resultado, "r");
     strcat(resultado, buffer);
     
     contador_temp_global++;

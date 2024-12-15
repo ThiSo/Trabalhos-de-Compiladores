@@ -18,7 +18,6 @@ pilha_tabelas_t *pilha_tabelas = NULL;
 int main (int argc, char **argv)
 {
   int ret = yyparse();
-  exporta(arvore);
   yylex_destroy();   
   return ret;
 }
