@@ -188,7 +188,12 @@ tipo_variavel: TK_PR_INT {
 
 
 corpo: bloco_comandos_func { 
-  $$ = $1;
+  if($1 == NULL) {
+    $$ = (asd_tree_t *)malloc(sizeof(asd_tree_t));
+    $$->codigo = cria_instrucao("nop", NULL, NULL, NULL);	
+  }
+  else
+    $$ = $1;
 };    
 
 
@@ -196,7 +201,7 @@ bloco_comandos_func: '{' lista_comandos '}' {
   $$ = $2;
 }
                    | '{' '}' { 
-  $$->codigo = cria_instrucao("nop", NULL, NULL, NULL);
+  $$ = NULL;	// Já que em bloco_comandos_func está sendo feita uma verificação se $1=NULL, não precisa gerar o nop aqui
 };
 
 
@@ -233,9 +238,19 @@ lista_comandos: comando {
       asd_add_child(corrige_ordem_filhos($$), $3); 
   } 
   else $$ = $3; 
+  
+  if($1 == NULL) 
+    $$->codigo = $3->codigo;	// Aqui também era necessario gerar codigo
+  else
+    $$->codigo = concatena2($1->codigo, $3->codigo);
 }
-              | declaracao_variavel ';' { 
-  $$ = $1; 
+              | declaracao_variavel ';' {  
+  if($1 == NULL) {
+    $$ = (asd_tree_t *)malloc(sizeof(asd_tree_t));
+    $$->codigo = cria_instrucao("nop", NULL, NULL, NULL);   //Aqui tinha problema porque quando o programa era só uma declaração de variaveis sem inicialização $1=NULL
+  }
+  else
+    $$ = $1;
 };
 
 
@@ -243,13 +258,13 @@ comando: bloco_comandos ';' {
   $$ = $1; 
 }
        | retorno ';' { 
-  $$ = $1; 
+  $$ = $1;
 }
        | atribuicao ';' { 
   $$ = $1;
 }
        | chamada_funcao ';' { 
-  $$ = $1; 
+  $$ = $1;
 }
        | controle_fluxo ';' { 
   $$ = $1; 
@@ -258,7 +273,7 @@ comando: bloco_comandos ';' {
 declaracao_variavel: tipo_variavel lista_variaveis { 
   $$ = $2;
   atribui_tipo(pilha_tabelas->tabela_simbolos, $1->tipo);
-  calcula_deslocamentos(pilha_tabelas->tabela_simbolos);
+  //calcula_deslocamentos(pilha_tabelas->tabela_simbolos);
 };   
                       
 lista_variaveis: variavel ',' lista_variaveis { 
@@ -270,8 +285,9 @@ lista_variaveis: variavel ',' lista_variaveis {
       asd_add_child($$, $3); 
   }
 };       
-               | variavel { 
-  $$ = $1; 
+               | variavel {  
+  $$ = $1;
+  
 };     
 
 
@@ -284,6 +300,13 @@ variavel: TK_IDENTIFICADOR {
   $$ = asd_new("<="); asd_add_child($$, asd_new($1->valor)); asd_add_child($$, $3); 
   conteudo_tabela_simbolos_t *entrada = cria_entrada($1->linha, "IDENTIFICADOR", "ATRIBUIR DEPOIS", $1->valor);
   adiciona_entrada(pilha_tabelas->tabela_simbolos, entrada); 
+  char* temp1 = gera_temp();
+  char* instr_loadI = cria_instrucao("loadI", $3->label, NULL, temp1);
+  char buffer[20]; 
+  sprintf(buffer, "%d", busca_entrada_pilha(pilha_tabelas, $1->valor)->deslocamento);
+  char* instr_storeAI = cria_instrucao("storeAI", temp1, "rfp", buffer);
+  $$->codigo = concatena2(instr_loadI, instr_storeAI);
+  
 };
 
 
@@ -297,8 +320,9 @@ literal: TK_LIT_INT {
 };                                         
 
 
-retorno: TK_PR_RETURN expressao { 
-  $$ = asd_new("return"), asd_add_child($$, $2); 
+retorno: TK_PR_RETURN expressao { 	// não era obrigatorio que o retorno gerasse código, mas pode ser útil pra etapa 6
+  $$ = asd_new("return"); asd_add_child($$, $2); 
+  $$->codigo = cria_instrucao("halt", NULL, NULL, NULL); 
 };                                                                    
 
 
@@ -355,8 +379,9 @@ atribuicao: TK_IDENTIFICADOR '=' expressao {
 };                                     
 
 
-chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')' { 
+chamada_funcao: TK_IDENTIFICADOR '(' lista_argumentos ')' {   // Não era obrigatorio que chamada_funcao gerasse código, mas está sendo feito para evitar possiveis seg faults
   $$ = processa_chamada_funcao($1, $3, pilha_tabelas);
+  $$->codigo = cria_instrucao("nop", NULL, NULL, NULL); 
 };           
 
 

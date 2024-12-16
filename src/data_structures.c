@@ -607,25 +607,13 @@ void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *ent
             printa_erro(ERR_DECLARED, entrada->valor, entrada->linha, ret->linha);
             return;
         }
-
-        if (strcmp(entrada->tipo, "ATRIBUIR DEPOIS") == 0) {
-            entrada->deslocamento = -1; 
-        } else {
-            if (tabela->numero_de_entradas == 0) {
-                entrada->deslocamento = 0; 
-            } else {
-                conteudo_tabela_simbolos_t *ultima_entrada = tabela->entradas[tabela->numero_de_entradas - 1];
-                if (ultima_entrada->deslocamento == -1) {
-                    entrada->deslocamento = -1; 
-                } else if (strcmp(ultima_entrada->tipo, "INT") == 0) {
-                    entrada->deslocamento = ultima_entrada->deslocamento + 4;
-                } else if (strcmp(ultima_entrada->tipo, "FLOAT") == 0) {
-                    entrada->deslocamento = ultima_entrada->deslocamento + 6;
-                } else {
-                    fprintf(stderr, "Erro: tipo desconhecido '%s'.\n", ultima_entrada->tipo);
-                    entrada->deslocamento = -1; 
-                }
-            }
+	
+	if (tabela->numero_de_entradas == 0) {
+                entrada->deslocamento = 0;
+        }
+        else {
+        	conteudo_tabela_simbolos_t *ultima_entrada = tabela->entradas[tabela->numero_de_entradas - 1];
+        	entrada->deslocamento = ultima_entrada->deslocamento + 4;
         }
         
         tabela->numero_de_entradas++;
@@ -636,11 +624,6 @@ void adiciona_entrada(tabela_simbolos_t *tabela, conteudo_tabela_simbolos_t *ent
         }
         tabela->entradas[tabela->numero_de_entradas - 1] = entrada;
 
-        if (entrada->deslocamento == -1) {
-            for (int i = 0; i < tabela->numero_de_entradas; i++) {
-                tabela->entradas[i]->deslocamento = -1;
-            }
-        }
     } else {
         fprintf(stderr, "Erro: %s recebeu parâmetros inválidos. tabela = %p, entrada = %p\n", __FUNCTION__, tabela, entrada);
     }
